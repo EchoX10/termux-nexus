@@ -599,11 +599,20 @@ def settings(cfg):
 # ATUALIZADOR
 # ============================================================
 
+
 def update_nexus(cfg):
     os.system("clear")
     banner(cfg)
 
     repo = Path.home() / "termux-nexus"
+    prefix = Path(
+        os.environ.get(
+            "PREFIX",
+            "/data/data/com.termux/files/usr"
+        )
+    )
+    installed_file = prefix / "bin" / "termux-nexus"
+    source_file = repo / "main.py"
 
     print("ATUALIZADOR DO TERMUX NEXUS\n")
 
@@ -613,60 +622,140 @@ def update_nexus(cfg):
         pause()
         return
 
-    print("Verificando atualizações no GitHub...\n")
+    def git(*args):
+        return subprocess.run(
+            ["git", "-C", str(repo), *args],
+            check=True,
+            text=True,
+            capture_output=True
+        ).stdout.strip()
 
     try:
-        subprocess.run(
-            ["git", "-C", str(repo), "fetch", "origin"],
-            check=True
-        )
+        # Confirmar a branch atual.
+        branch = git("branch", "--show-current")
 
-        local = subprocess.check_output(
-            ["git", "-C", str(repo), "rev-parse", "HEAD"],
-            text=True
-        ).strip()
-
-        remote = subprocess.check_output(
-            ["git", "-C", str(repo), "rev-parse", "origin/main"],
-            text=True
-        ).strip()
-
-        if local == remote:
-            print("Você já está utilizando a versão mais recente!")
+        if branch != "main":
+            print(f"Branch atual: {branch}")
+            print("O atualizador precisa estar na branch main.")
             pause()
             return
 
-        print("Uma nova atualização foi encontrada!")
-        answer = input("\nDeseja atualizar? [S/N] > ").strip().lower()
+        # Não atualizar por cima de alterações locais.
+        changes = git("status", "--porcelain")
 
-        if answer not in ("s", "sim"):
-            print("\nAtualização cancelada.")
+        if changes:
+            print("Foram encontradas alterações locais no repositório.")
+            print("Atualização cancelada para proteger seus arquivos.")
             pause()
             return
 
-        print("\nBaixando atualização...\n")
+        print("Verificando atualizações no GitHub...\n")
 
-        subprocess.run(
-            ["git", "-C", str(repo), "pull", "--ff-only", "origin", "main"],
-            check=True
+        git("fetch", "--prune", "origin")
+
+        local = git("rev-parse", "HEAD")
+        remote = git("rev-parse", "origin/main")
+
+        # Verificar se a versão local pode ser atualizada com segurança.
+        relation = git(
+            "rev-list",
+            "--left-right",
+            "--count",
+            "HEAD...origin/main"
         )
 
-        print("\nInstalando arquivos atualizados...\n")
+        ahead, behind = map(int, relation.split())
+
+        if ahead > 0:
+            print("A versão local possui commits que não estão no GitHub.")
+            print("Não é seguro atualizar automaticamente.")
+            pause()
+            return
+
+        update_available = local != remote
+
+        # Verificar se o programa instalado está sincronizado.
+        installed_ok = (
+            installed_file.is_file()
+            and source_file.is_file()
+            and installed_file.read_bytes() == source_file.read_bytes()
+        )
+
+        if not update_available and installed_ok:
+            print("O Termux Nexus já está atualizado!")
+            print("Repositório e programa instalado estão sincronizados.")
+            pause()
+            return
+
+        if update_available:
+            print("Uma nova atualização foi encontrada!")
+            print(f"Commits novos: {behind}")
+
+            answer = live_input(
+                "\nDeseja atualizar? [S/N] > ",
+                cfg
+            ).lower()
+
+            if answer not in ("s", "sim"):
+                print("\nAtualização cancelada.")
+                pause()
+                return
+
+            print("\nBaixando atualização...\n")
+
+            git("pull", "--ff-only", "origin", "main")
+
+            # Confirmar que o Git chegou exatamente ao commit remoto.
+            local = git("rev-parse", "HEAD")
+            remote = git("rev-parse", "origin/main")
+
+            if local != remote:
+                print("\nERRO: o repositório não chegou à versão esperada.")
+                pause()
+                return
+
+        else:
+            print("O repositório já está atualizado.")
+            print("O programa instalado está desatualizado.")
+            print("Iniciando sincronização dos arquivos...\n")
+
+        # Executar o instalador.
+        print("\nInstalando arquivos...\n")
 
         subprocess.run(
             ["bash", str(repo / "install.sh")],
             check=True
         )
 
-        print("\nAtualização concluída com sucesso!")
-        print("Feche e abra novamente o Nexus para carregar tudo.")
+        # Confirmar que o arquivo instalado realmente foi atualizado.
+        if not installed_file.is_file():
+            print("\nERRO: o arquivo instalado não foi encontrado.")
+            print(f"Esperado em: {installed_file}")
+            pause()
+            return
+
+        if installed_file.read_bytes() != source_file.read_bytes():
+            print("\nERRO: o arquivo instalado não corresponde ao main.py.")
+            print("Verifique o install.sh.")
+            pause()
+            return
+
+        print("\nAtualização concluída e verificada!")
+        print(f"Commit: {local[:12]}")
+        print("Repositório e programa instalado estão sincronizados.")
+        print("\nFeche e abra novamente o Nexus para carregar tudo.")
 
     except subprocess.CalledProcessError as error:
-        print(f"\nErro durante a atualização: {error}")
-        print("Verifique sua conexão e possíveis alterações locais.")
+        print("\nERRO durante a atualização.")
+        print(f"Comando: {error.cmd}")
+        print(f"Detalhes: {error.stderr or error.stdout or error}")
 
     except FileNotFoundError:
-        print("\nGit não encontrado. Instale com: pkg install git -y")
+        print("\nGit ou algum arquivo necessário não foi encontrado.")
+        print("Verifique a instalação do Git e do Termux Nexus.")
+
+    except OSError as error:
+        print(f"\nErro ao verificar os arquivos: {error}")
 
     pause()
 
