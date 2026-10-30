@@ -235,9 +235,9 @@ def main():
 
         elif choice == "4":
             update_nexus(cfg)
-
+            
         elif choice == "0":
             break
 
-         if __name__ == "__main__":
+if __name__ == "__main__":
     main()
