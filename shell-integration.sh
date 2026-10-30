@@ -39,7 +39,7 @@ _nexus_autostart() {
 
     if [ -f "$_NEXUS_CONFIG/enabled" ] && [ -x "$_NEXUS_BIN" ]; then
         printf '\033[2J\033[H'
-        python "$_NEXUS_BIN" </dev/null
+        python "$_NEXUS_BIN"
     fi
 }
 
