@@ -1,6 +1,9 @@
+
 #!/usr/bin/env python3
 """Termux Nexus — personalizador leve para Termux."""
+
 from __future__ import annotations
+
 import datetime
 import json
 import os
@@ -13,24 +16,98 @@ from pathlib import Path
 HOME = Path.home()
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "termux-nexus"
 CONFIG_FILE = CONFIG_DIR / "config.json"
-DEFAULTS = {"theme": "cyan", "banner": "COOLKID", "show_clock": True}
-COLORS = {"cyan": "\033[96m", "green": "\033[92m", "blue": "\033[94m", "magenta": "\033[95m", "white": "\033[97m"}
+
+DEFAULTS = {
+    "theme": "cyan",
+    "banner": "COOLKID",
+    "show_clock": True
+}
+
+COLORS = {
+    "cyan": "\033[96m",
+    "green": "\033[92m",
+    "blue": "\033[94m",
+    "magenta": "\033[95m",
+    "white": "\033[97m"
+}
+
 RESET = "\033[0m"
+
 
 def load_config():
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+
     try:
         saved = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
         return {**DEFAULTS, **saved}
     except (OSError, json.JSONDecodeError):
         return DEFAULTS.copy()
 
+
 def save_config(cfg):
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
-    CONFIG_FILE.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+    CONFIG_FILE.write_text(
+        json.dumps(cfg, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8"
+    )
+
 
 def paint(cfg):
     return COLORS.get(cfg.get("theme"), COLORS["cyan"])
+
+
+def live_input(prompt_text, cfg):
+    """Entrada com relógio dinâmico usando Prompt Toolkit."""
+
+    if not cfg.get("show_clock", True):
+        try:
+            return input(prompt_text).strip()
+        except EOFError:
+            return "0"
+
+    try:
+        from prompt_toolkit import prompt
+        from prompt_toolkit.styles import Style
+
+        theme_colors = {
+            "cyan": "#00ffff",
+            "green": "#00ff66",
+            "blue": "#5599ff",
+            "magenta": "#ff55ff",
+            "white": "#ffffff"
+        }
+
+        clock_color = theme_colors.get(
+            cfg.get("theme"),
+            "#00ffff"
+        )
+
+        style = Style.from_dict({
+            "bottom-toolbar": f"fg:{clock_color} bg:#151515"
+        })
+
+        def clock_toolbar():
+            now = datetime.datetime.now().astimezone()
+            clock = now.strftime("%d/%m/%Y  •  %H:%M:%S %Z")
+
+            return [
+                ("class:bottom-toolbar", f"  {clock}  ")
+            ]
+
+        return prompt(
+            prompt_text,
+            bottom_toolbar=clock_toolbar,
+            refresh_interval=1,
+            style=style
+        ).strip()
+
+    except ImportError:
+        print("Prompt Toolkit não encontrado. Usando entrada normal.")
+        try:
+            return input(prompt_text).strip()
+        except EOFError:
+            return "0"
 
 
 def banner(cfg):
@@ -52,55 +129,94 @@ def banner(cfg):
 
     label = cfg.get("banner", "NEXUS")[:24]
     print(c + f"  {label}" + RESET)
-
-    if cfg.get("show_clock", True):
-        now = datetime.datetime.now().astimezone()
-        print(c + "  " + now.strftime("%d/%m/%Y  •  %H:%M:%S %Z") + RESET)
-
     print()
 
+
 def pause():
-    input("\nPressione Enter para voltar...")
+    try:
+        input("\nPressione Enter para voltar...")
+    except EOFError:
+        pass
+
 
 def show_system(cfg):
     os.system("clear")
     banner(cfg)
+
     print("INFORMAÇÕES DO SISTEMA\n")
     print(f"Sistema: {platform.system()} {platform.release()}")
     print(f"Arquitetura: {platform.machine()}")
     print(f"Python: {platform.python_version()}")
     print(f"Host: {socket.gethostname()}")
+
     usage = shutil.disk_usage(HOME)
     print(f"Espaço livre: {usage.free // (1024**3)} GB")
+
     pause()
+
 
 def tools_menu(cfg):
     while True:
         os.system("clear")
         banner(cfg)
-        print("FERRAMENTAS\n[1] Listar arquivos\n[2] Testar conexão\n[3] Verificar FFmpeg\n[4] Informações do sistema\n[0] Voltar")
-        choice = input("\nNexus/tools > ").strip()
+
+        print(
+            "FERRAMENTAS\n"
+            "[1] Listar arquivos\n"
+            "[2] Testar conexão\n"
+            "[3] Verificar FFmpeg\n"
+            "[4] Informações do sistema\n"
+            "[0] Voltar"
+        )
+
+        choice = live_input("\nNexus/tools > ", cfg)
+
         if choice == "1":
-            subprocess.run(["ls", "-lah"]); pause()
+            subprocess.run(["ls", "-lah"])
+            pause()
+
         elif choice == "2":
             os.system("clear")
-            result = subprocess.run(["ping", "-c", "1", "-W", "3", "1.1.1.1"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            print("Conexão respondeu." if result.returncode == 0 else "Não foi possível confirmar a conexão.")
+
+            result = subprocess.run(
+                ["ping", "-c", "1", "-W", "3", "1.1.1.1"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+
+            print(
+                "Conexão respondeu."
+                if result.returncode == 0
+                else "Não foi possível confirmar a conexão."
+            )
+
             pause()
+
         elif choice == "3":
             os.system("clear")
+
             found = shutil.which("ffmpeg")
-            print(f"FFmpeg disponível em: {found}" if found else "FFmpeg não encontrado. Instale com: pkg install ffmpeg")
+
+            print(
+                f"FFmpeg disponível em: {found}"
+                if found
+                else "FFmpeg não encontrado. Instale com: pkg install ffmpeg -y"
+            )
+
             pause()
+
         elif choice == "4":
             show_system(cfg)
+
         elif choice == "0":
             return
+
 
 def settings(cfg):
     while True:
         os.system("clear")
         banner(cfg)
+
         print("CONFIGURAÇÕES\n")
         print(f"[1] Cor: {cfg['theme']}")
         print(f"[2] Texto personalizado: {cfg['banner']}")
@@ -109,28 +225,45 @@ def settings(cfg):
         print("[5] Informações do sistema")
         print("[6] Restaurar padrões")
         print("[0] Sair")
-        choice = input("\nNexus/config > ").strip()
+
+        choice = live_input("\nNexus/config > ", cfg)
+
         if choice == "1":
             print("\nOpções: " + ", ".join(COLORS))
+
             value = input("Escolha uma cor: ").strip().lower()
+
             if value in COLORS:
-                cfg["theme"] = value; save_config(cfg)
+                cfg["theme"] = value
+                save_config(cfg)
+
         elif choice == "2":
-            value = input("Novo texto (máximo 24 caracteres): ").strip()[:24]
+            value = input(
+                "Novo texto (máximo 24 caracteres): "
+            ).strip()[:24]
+
             if value:
-                cfg["banner"] = value; save_config(cfg)
+                cfg["banner"] = value
+                save_config(cfg)
+
         elif choice == "3":
-            cfg["show_clock"] = not cfg["show_clock"]; save_config(cfg)
+            cfg["show_clock"] = not cfg["show_clock"]
+            save_config(cfg)
+
         elif choice == "4":
             tools_menu(cfg)
+
         elif choice == "5":
             show_system(cfg)
+
         elif choice == "6":
-            cfg = DEFAULTS.copy(); save_config(cfg)
+            cfg = DEFAULTS.copy()
+            save_config(cfg)
+
         elif choice == "0":
             return
 
-        
+
 def update_nexus(cfg):
     os.system("clear")
     banner(cfg)
@@ -200,10 +333,9 @@ def update_nexus(cfg):
         print("Verifique sua conexão e possíveis alterações locais.")
 
     except FileNotFoundError:
-        print("\nGit não encontrado. Instale com: pkg install git")
+        print("\nGit não encontrado. Instale com: pkg install git -y")
 
     pause()
-
 
 
 def main():
@@ -226,8 +358,8 @@ def main():
         print("[4] Atualizar Termux Nexus")
         print("[0] Sair")
 
-        choice = input("\nNexus > ").strip()
-        
+        choice = live_input("\nNexus > ", cfg)
+
         if choice == "1":
             settings(cfg)
             cfg = load_config()
@@ -240,9 +372,10 @@ def main():
 
         elif choice == "4":
             update_nexus(cfg)
-            
+
         elif choice == "0":
             break
+
 
 if __name__ == "__main__":
     main()
