@@ -59,41 +59,6 @@ def banner(cfg):
 
     print()
 
-    
-def live_input(prompt, cfg):
-    import select
-    import sys
-    import time
-
-    print(prompt, end="", flush=True)
-
-    while True:
-        ready, _, _ = select.select([sys.stdin], [], [], 1)
-
-        if ready:
-            return sys.stdin.readline().strip()
-
-        if not cfg.get("show_clock", True):
-            continue
-
-        now = datetime.datetime.now().astimezone()
-        clock = now.strftime("%d/%m/%Y  •  %H:%M:%S %Z")
-
-        # Salva o cursor, atualiza o relógio e restaura sua posição.
-        sys.stdout.write(
-            "\033[s"
-            "\033[9A"
-            "\033[1G"
-            "\033[2K"
-            + paint(cfg)
-            + "  "
-            + clock
-            + RESET
-            + "\033[u"
-        )
-        sys.stdout.flush()
-
-
 def pause():
     input("\nPressione Enter para voltar...")
 
@@ -261,8 +226,8 @@ def main():
         print("[4] Atualizar Termux Nexus")
         print("[0] Sair")
 
-        choice = live_input("\nNexus > ", cfg)
-
+        choice = input("\nNexus > ").strip()
+        
         if choice == "1":
             settings(cfg)
             cfg = load_config()
