@@ -116,8 +116,9 @@ def _change_directory(parts, current_dir, previous_dir):
 def _is_known_command(name, candidates):
     if name in candidates:
         return True
+    # Caminhos explícitos são deixados para o shell validar no diretório atual.
     if "/" in name or name.startswith("."):
-        return Path(name).exists()
+        return True
     return shutil.which(name) is not None
 
 
@@ -183,7 +184,7 @@ def run(cfg=None):
 
         # Detecta comandos simples desconhecidos antes do shell exibir a mensagem padrão.
         first = parts[0]
-        if not first.startswith(("NAME=", "export")) and not _is_known_command(first, candidates):
+        if "=" not in first and first != "export" and not _is_known_command(first, candidates):
             _unknown_command(first, candidates)
             continue
 
