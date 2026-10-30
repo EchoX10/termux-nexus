@@ -28,6 +28,7 @@ bash install.sh
 - **NEXUS RADAR:** diagnóstico de rede, DNS, ping e descoberta TCP opcional na rede local.
 - **NEXUS LAB:** banners personalizados, gradientes ANSI, animações e arte ASCII.
 - **NEXUS COMMAND CENTER:** terminal interno com comandos próprios, histórico persistente e ajuda integrada.
+- **NEXUS TERMINAL:** modo de comandos integrado, com data, hora e diretório atual no prompt, suporte a `cd` persistente e sugestões para comandos desconhecidos.
 - Instalador com backup dos arquivos de inicialização e módulos em `$PREFIX/lib/termux-nexus/modules`.
 
 ## Comandos do Command Center

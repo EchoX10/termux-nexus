@@ -22,6 +22,7 @@ if MODULES_HOME.is_dir():
 from modules.radar import run as radar_menu
 from modules.lab import run as lab_menu
 from modules.command_center import run as command_center_menu
+from modules.terminal_mode import run as terminal_mode_menu
 
 HOME = Path.home()
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "termux-nexus"
@@ -804,6 +805,7 @@ def main():
         print("[2] Caixa de ferramentas")
         print("[3] Informações do sistema")
         print("[4] Atualizar Termux Nexus")
+        print("[5] Digitar comandos no Termux")
         print("[0] Sair")
 
         choice = live_input("\nNexus > ", cfg)
@@ -820,6 +822,9 @@ def main():
 
         elif choice == "4":
             update_nexus(cfg)
+
+        elif choice == "5":
+            terminal_mode_menu(cfg)
 
         elif choice == "0":
             break
