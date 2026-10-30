@@ -32,8 +32,10 @@ def save_config(cfg):
 def paint(cfg):
     return COLORS.get(cfg.get("theme"), COLORS["cyan"])
 
+
 def banner(cfg):
     c = paint(cfg)
+
     print(c + r"""
 ╔════════════════════════════════════════════════════════════╗
 ║                                                            ║
@@ -47,42 +49,21 @@ def banner(cfg):
 ║                    TERMUX NEXUS  •  1.0.0                  ║
 ╚════════════════════════════════════════════════════════════╝
 """ + RESET)
+
     label = cfg.get("banner", "NEXUS")[:24]
     print(c + f"  {label}" + RESET)
+
     if cfg.get("show_clock", True):
         now = datetime.datetime.now().astimezone()
         print(c + "  " + now.strftime("%d/%m/%Y  •  %H:%M:%S %Z") + RESET)
+
     print()
 
-
-def live_clock(cfg):
-    import time
-
-    try:
-        while True:
-            now = datetime.datetime.now().astimezone()
-            clock = now.strftime("%d/%m/%Y  •  %H:%M:%S %Z")
-
-            print(
-                "\033[s"
-                + paint(cfg)
-                + "  "
-                + clock
-                + RESET
-                + "\033[u",
-                end="",
-                flush=True
-            )
-
-            time.sleep(1)
-
-    except KeyboardInterrupt:
-        pass
-
-
+    
 def live_input(prompt, cfg):
     import select
     import sys
+    import time
 
     print(prompt, end="", flush=True)
 
@@ -92,22 +73,25 @@ def live_input(prompt, cfg):
         if ready:
             return sys.stdin.readline().strip()
 
-        if cfg.get("show_clock", True):
-            now = datetime.datetime.now().astimezone()
-            clock = now.strftime("%d/%m/%Y  •  %H:%M:%S %Z")
+        if not cfg.get("show_clock", True):
+            continue
 
-            print(
-                "\033[s"
-                "\033[14;1H"
-                "\033[2K"
-                + paint(cfg)
-                + "  "
-                + clock
-                + RESET
-                + "\033[u",
-                end="",
-                flush=True
-            )
+        now = datetime.datetime.now().astimezone()
+        clock = now.strftime("%d/%m/%Y  •  %H:%M:%S %Z")
+
+        # Salva o cursor, atualiza o relógio e restaura sua posição.
+        sys.stdout.write(
+            "\033[s"
+            "\033[9A"
+            "\033[1G"
+            "\033[2K"
+            + paint(cfg)
+            + "  "
+            + clock
+            + RESET
+            + "\033[u"
+        )
+        sys.stdout.flush()
 
 
 def pause():
