@@ -214,12 +214,12 @@ def ffmpeg_glitch_video(cfg):
 
     print("FFMPEG GLITCH VIDEO")
     print("Modo manual • Intensidade extrema\n")
-
+    
     if not ensure_ffmpeg():
-    pause()
-    return
+        pause()
+        return
 
-ffmpeg = shutil.which("ffmpeg")
+    ffmpeg = shutil.which("ffmpeg")
 
     print("Digite o caminho completo do vídeo.")
     print("Exemplo: /sdcard/Movies/video.mp4\n")
