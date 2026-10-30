@@ -125,13 +125,116 @@ def settings(cfg):
         elif choice == "0":
             return
 
+        
+def update_nexus(cfg):
+    os.system("clear")
+    banner(cfg)
+
+    repo = Path.home() / "termux-nexus"
+
+    print("ATUALIZADOR DO TERMUX NEXUS\n")
+
+    if not (repo / ".git").exists():
+        print("Repositório não encontrado!")
+        print(f"Esperado em: {repo}")
+        pause()
+        return
+
+    print("Verificando atualizações no GitHub...\n")
+
+    try:
+        subprocess.run(
+            ["git", "-C", str(repo), "fetch", "origin"],
+            check=True
+        )
+
+        local = subprocess.check_output(
+            ["git", "-C", str(repo), "rev-parse", "HEAD"],
+            text=True
+        ).strip()
+
+        remote = subprocess.check_output(
+            ["git", "-C", str(repo), "rev-parse", "origin/main"],
+            text=True
+        ).strip()
+
+        if local == remote:
+            print("Você já está utilizando a versão mais recente!")
+            pause()
+            return
+
+        print("Uma nova atualização foi encontrada!")
+        print("\nDeseja atualizar o Termux Nexus?")
+
+        answer = input("[S/N] > ").strip().lower()
+
+        if answer not in ("s", "sim"):
+            print("\nAtualização cancelada.")
+            pause()
+            return
+
+        print("\nBaixando atualização...\n")
+
+        subprocess.run(
+            ["git", "-C", str(repo), "pull", "--ff-only", "origin", "main"],
+            check=True
+        )
+
+        print("\nInstalando arquivos atualizados...\n")
+
+        subprocess.run(
+            ["bash", str(repo / "install.sh")],
+            check=True
+        )
+
+        print("\nAtualização concluída com sucesso!")
+        print("Feche e abra novamente o Nexus para carregar tudo.")
+
+    except subprocess.CalledProcessError as error:
+        print(f"\nErro durante a atualização: {error}")
+        print("Verifique sua conexão e possíveis alterações locais.")
+
+    except FileNotFoundError:
+        print("\nGit não encontrado. Instale com: pkg install git")
+
+    pause()
+
+
+
 def main():
     cfg = load_config()
+
     import sys
+
     if len(sys.argv) > 1 and sys.argv[1] == "config":
         settings(cfg)
-    else:
+        return
+
+    while True:
+        os.system("clear")
         banner(cfg)
 
-if __name__ == "__main__":
-    main()
+        print("CENTRAL DE CONTROLE\n")
+        print("[1] Personalização")
+        print("[2] Caixa de ferramentas")
+        print("[3] Informações do sistema")
+        print("[4] Atualizar Termux Nexus")
+        print("[0] Sair")
+
+        choice = input("\nNexus > ").strip()
+
+        if choice == "1":
+            settings(cfg)
+            cfg = load_config()
+
+        elif choice == "2":
+            tools_menu(cfg)
+
+        elif choice == "3":
+            show_system(cfg)
+
+        elif choice == "4":
+            update_nexus(cfg)
+
+        elif choice == "0":
+            break
