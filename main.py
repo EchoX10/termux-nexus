@@ -155,6 +155,292 @@ def show_system(cfg):
     pause()
 
 
+# ============================================================
+# FFmpeg GLITCH VIDEO
+# ============================================================
+
+def ask_effect(cfg, description):
+    answer = live_input(
+        f"{description} [s/N]: ",
+        cfg
+    ).lower()
+
+    return answer in ("s", "sim", "y", "yes")
+
+
+def ffmpeg_glitch_video(cfg):
+    os.system("clear")
+    banner(cfg)
+
+    print("FFMPEG GLITCH VIDEO")
+    print("Modo manual • Intensidade extrema\n")
+
+    ffmpeg = shutil.which("ffmpeg")
+
+    if not ffmpeg:
+        print("FFmpeg não está instalado.")
+        print("\nInstale com:")
+        print("pkg install ffmpeg -y")
+        pause()
+        return
+
+    print("Digite o caminho completo do vídeo.")
+    print("Exemplo: /sdcard/Movies/video.mp4\n")
+
+    input_path = live_input("Caminho do vídeo > ", cfg)
+
+    if not input_path:
+        print("\nNenhum arquivo selecionado.")
+        pause()
+        return
+
+    video = Path(input_path).expanduser()
+
+    if not video.is_file():
+        print("\nArquivo não encontrado!")
+        pause()
+        return
+
+    # Verificar se existe uma faixa de vídeo.
+    try:
+        probe = subprocess.run(
+            [
+                "ffprobe",
+                "-v", "error",
+                "-select_streams", "v:0",
+                "-show_entries", "stream=codec_type",
+                "-of", "csv=p=0",
+                str(video)
+            ],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        if not probe.stdout.strip():
+            print("\nO arquivo não contém uma faixa de vídeo válida.")
+            pause()
+            return
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("\nNão foi possível analisar o vídeo.")
+        print("Verifique se o FFprobe está disponível.")
+        pause()
+        return
+
+    # Efeitos visuais.
+    video_effects = [
+        (
+            "RGB Split",
+            "Separação extrema das cores RGB",
+            "rgbashift=rh=24:rv=0:bh=-24:bv=0"
+        ),
+        (
+            "Digital Noise",
+            "Ruído digital intenso",
+            "noise=alls=80:allf=t+u"
+        ),
+        (
+            "Color Corruption",
+            "Saturação e contraste extremos",
+            "eq=contrast=2.0:saturation=3.0:gamma=0.7"
+        ),
+        (
+            "Hue Distortion",
+            "Distorção extrema de tonalidade",
+            "hue=h=90:s=2"
+        ),
+        (
+            "Negative",
+            "Inversão das cores",
+            "negate"
+        ),
+        (
+            "Pixelation",
+            "Pixelização pesada",
+            "scale=iw/4:ih/4:flags=neighbor,scale=iw*4:ih*4:flags=neighbor"
+        )
+    ]
+
+    # Efeitos sonoros.
+    audio_effects = [
+        (
+            "Bitcrusher",
+            "Redução extrema da qualidade digital",
+            "acrusher=bits=4:mix=1"
+        ),
+        (
+            "Echo",
+            "Eco exagerado",
+            "aecho=0.8:0.9:1000|1800:0.8|0.5"
+        ),
+        (
+            "Lowpass",
+            "Corte extremo das frequências altas",
+            "lowpass=f=1200"
+        ),
+        (
+            "Highpass",
+            "Corte extremo das frequências baixas",
+            "highpass=f=500"
+        ),
+        (
+            "Distorted Sound",
+            "Distorção e saturação sonora",
+            "asoftclip=type=hard:threshold=0.3"
+        )
+    ]
+
+    selected_video = []
+    selected_audio = []
+
+    os.system("clear")
+    banner(cfg)
+
+    print("SELEÇÃO DE EFEITOS VISUAIS")
+    print("Responda S para ativar ou N para ignorar.\n")
+
+    for name, description, filter_value in video_effects:
+        print(f"\n[{name}]")
+        if ask_effect(cfg, description):
+            selected_video.append(filter_value)
+
+    os.system("clear")
+    banner(cfg)
+
+    print("SELEÇÃO DE EFEITOS SONOROS")
+    print("Responda S para ativar ou N para ignorar.\n")
+
+    for name, description, filter_value in audio_effects:
+        print(f"\n[{name}]")
+        if ask_effect(cfg, description):
+            selected_audio.append(filter_value)
+
+    if not selected_video and not selected_audio:
+        print("\nNenhum efeito foi selecionado.")
+        pause()
+        return
+
+    # Criar nome de saída sem sobrescrever arquivos.
+    default_output = video.with_name(
+        video.stem + "_GLITCH.mp4"
+    )
+
+    print("\nARQUIVO DE SAÍDA")
+    print(f"Destino sugerido: {default_output}")
+
+    output_input = live_input(
+        "\nNovo caminho (Enter para usar o sugerido) > ",
+        cfg
+    )
+
+    output = (
+        Path(output_input).expanduser()
+        if output_input
+        else default_output
+    )
+
+    if output.resolve() == video.resolve():
+        print("\nO arquivo de saída não pode ser o próprio original.")
+        pause()
+        return
+
+    if output.exists():
+        print("\nEsse arquivo já existe. Escolha outro nome.")
+        pause()
+        return
+
+    if output.suffix.lower() != ".mp4":
+        output = output.with_suffix(".mp4")
+
+        if output.exists():
+            print("\nO arquivo de saída já existe.")
+            pause()
+            return
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+
+    # Montar comando FFmpeg.
+    command = [
+        ffmpeg,
+        "-hide_banner",
+        "-i", str(video),
+        "-map", "0:v:0",
+        "-map", "0:a?",
+    ]
+
+    if selected_video:
+        command.extend([
+            "-vf", ",".join(selected_video)
+        ])
+
+    if selected_audio:
+        command.extend([
+            "-af", ",".join(selected_audio)
+        ])
+
+    command.extend([
+        "-c:v", "libx264",
+        "-preset", "veryfast",
+        "-crf", "23",
+        "-pix_fmt", "yuv420p",
+        "-c:a", "aac",
+        "-b:a", "96k",
+        "-movflags", "+faststart",
+        "-n",
+        str(output)
+    ])
+
+    os.system("clear")
+    banner(cfg)
+
+    print("PROCESSAMENTO GLITCH")
+    print(f"\nVídeo original: {video}")
+    print(f"Arquivo final: {output}")
+
+    print("\nEfeitos visuais:")
+    for effect in selected_video:
+        print(f"  + {effect}")
+
+    print("\nEfeitos sonoros:")
+    for effect in selected_audio:
+        print(f"  + {effect}")
+
+    print("\nIniciando FFmpeg...\n")
+
+    try:
+        result = subprocess.run(command)
+
+        if result.returncode == 0 and output.exists():
+            print("\nVídeo glitch criado com sucesso!")
+            print(f"\nArquivo: {output}")
+            print(f"Tamanho: {output.stat().st_size // 1024} KB")
+        else:
+            print("\nO FFmpeg encontrou um erro.")
+            print("O arquivo original foi preservado.")
+
+            if output.exists():
+                output.unlink()
+
+    except KeyboardInterrupt:
+        print("\nProcessamento interrompido.")
+
+        if output.exists():
+            output.unlink()
+
+    except Exception as error:
+        print(f"\nErro inesperado: {error}")
+
+        if output.exists():
+            output.unlink()
+
+    pause()
+
+
+# ============================================================
+# FERRAMENTAS
+# ============================================================
+
 def tools_menu(cfg):
     while True:
         os.system("clear")
@@ -166,6 +452,7 @@ def tools_menu(cfg):
             "[2] Testar conexão\n"
             "[3] Verificar FFmpeg\n"
             "[4] Informações do sistema\n"
+            "[5] FFmpeg Glitch Video\n"
             "[0] Voltar"
         )
 
@@ -208,9 +495,16 @@ def tools_menu(cfg):
         elif choice == "4":
             show_system(cfg)
 
+        elif choice == "5":
+            ffmpeg_glitch_video(cfg)
+
         elif choice == "0":
             return
 
+
+# ============================================================
+# CONFIGURAÇÕES
+# ============================================================
 
 def settings(cfg):
     while True:
@@ -264,6 +558,10 @@ def settings(cfg):
             return
 
 
+# ============================================================
+# ATUALIZADOR
+# ============================================================
+
 def update_nexus(cfg):
     os.system("clear")
     banner(cfg)
@@ -302,9 +600,7 @@ def update_nexus(cfg):
             return
 
         print("Uma nova atualização foi encontrada!")
-        print("\nDeseja atualizar o Termux Nexus?")
-
-        answer = input("[S/N] > ").strip().lower()
+        answer = input("\nDeseja atualizar? [S/N] > ").strip().lower()
 
         if answer not in ("s", "sim"):
             print("\nAtualização cancelada.")
@@ -337,6 +633,10 @@ def update_nexus(cfg):
 
     pause()
 
+
+# ============================================================
+# MENU PRINCIPAL
+# ============================================================
 
 def main():
     cfg = load_config()
