@@ -13,6 +13,16 @@ import socket
 import subprocess
 from pathlib import Path
 
+# Modulos extras: funcionam no repositorio e na instalacao.
+import sys
+MODULES_HOME = Path(os.environ.get("PREFIX", "/data/data/com.termux/files/usr")) / "lib" / "termux-nexus"
+if MODULES_HOME.is_dir():
+    sys.path.insert(0, str(MODULES_HOME))
+
+from modules.radar import run as radar_menu
+from modules.lab import run as lab_menu
+from modules.command_center import run as command_center_menu
+
 HOME = Path.home()
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "termux-nexus"
 CONFIG_FILE = CONFIG_DIR / "config.json"
@@ -490,6 +500,9 @@ def tools_menu(cfg):
             "[3] Verificar FFmpeg\n"
             "[4] Informações do sistema\n"
             "[5] FFmpeg Glitch Video\n"
+            "[6] NEXUS RADAR\n"
+            "[7] NEXUS LAB\n"
+            "[8] NEXUS COMMAND CENTER\n"
             "[0] Voltar"
         )
 
@@ -534,6 +547,15 @@ def tools_menu(cfg):
 
         elif choice == "5":
             ffmpeg_glitch_video(cfg)
+
+        elif choice == "6":
+            radar_menu(cfg)
+
+        elif choice == "7":
+            lab_menu(cfg)
+
+        elif choice == "8":
+            command_center_menu(cfg)
 
         elif choice == "0":
             return
