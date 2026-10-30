@@ -168,6 +168,46 @@ def ask_effect(cfg, description):
     return answer in ("s", "sim", "y", "yes")
 
 
+def ensure_ffmpeg():
+    """Verifica e instala automaticamente FFmpeg no Termux."""
+
+    if shutil.which("ffmpeg") and shutil.which("ffprobe"):
+        return True
+
+    os.system("clear")
+
+    print("FFMPEG NÃO ENCONTRADO")
+    print("\nO Termux Nexus precisa instalar o FFmpeg.")
+    print("Iniciando instalação automática...\n")
+
+    if not shutil.which("pkg"):
+        print("Gerenciador de pacotes do Termux não encontrado.")
+        return False
+
+    try:
+        subprocess.run(
+            ["pkg", "update", "-y"],
+            check=True
+        )
+
+        subprocess.run(
+            ["pkg", "install", "ffmpeg", "-y"],
+            check=True
+        )
+
+    except subprocess.CalledProcessError as error:
+        print(f"\nFalha na instalação: {error}")
+        print("Verifique sua conexão com a internet.")
+        return False
+
+    if shutil.which("ffmpeg") and shutil.which("ffprobe"):
+        print("\nFFmpeg instalado com sucesso!")
+        return True
+
+    print("\nNão foi possível confirmar a instalação.")
+    return False
+
+
 def ffmpeg_glitch_video(cfg):
     os.system("clear")
     banner(cfg)
