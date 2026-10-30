@@ -7,7 +7,9 @@ PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"
 BIN="$PREFIX/bin"
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/termux-nexus"
 
-mkdir -p "$BIN" "$CONFIG"
+LIB_DIR="$PREFIX/lib/termux-nexus"
+
+mkdir -p "$BIN" "$CONFIG" "$LIB_DIR"
 
 # Verificar Python
 if ! command -v python >/dev/null 2>&1; then
@@ -27,7 +29,10 @@ fi
 
 # Instalar aplicativo
 cp "$ROOT/main.py" "$BIN/termux-nexus"
+rm -rf "$LIB_DIR/modules"
+cp -R "$ROOT/modules" "$LIB_DIR/modules"
 chmod 755 "$BIN/termux-nexus"
+find "$LIB_DIR/modules" -type f -name "*.py" -exec chmod 644 {} \;
 
 # Criar configuração padrão
 if [ ! -f "$CONFIG/config.json" ]; then
