@@ -21,7 +21,7 @@ bash install.sh
 ## Recursos
 
 - Interface de terminal em ciano com banner ASCII.
-- **NEXUS CYBER Nano:** tema ciano/azul para o editor Nano, com numeração de linhas, cores de interface e destaque geral de código; preserva o conteúdo pré-existente de `~/.nanorc`.
+- **NEXUS CYBER Nano:** tema ciano/azul para o editor Nano, com numeração de linhas e cores de interface; preserva o conteúdo pré-existente de `~/.nanorc` e usa o realce de sintaxe nativo.
 - Configurações persistentes em JSON.
 - Integração com Bash e Zsh.
 - Informações do sistema e ferramentas básicas.
@@ -30,6 +30,9 @@ bash install.sh
 - **NEXUS LAB:** banners personalizados, gradientes ANSI, animações e arte ASCII.
 - **NEXUS COMMAND CENTER:** terminal interno com comandos próprios, histórico persistente e ajuda integrada.
 - **NEXUS TERMINAL:** modo de comandos integrado, com data, hora e diretório atual no prompt, suporte a `cd` persistente e sugestões para comandos desconhecidos.
+- **NEXUS Logs:** histórico local de atividades, visualização das últimas 100 linhas ou do histórico completo e limpeza com confirmação.
+- **NEXUS Editor:** editor de texto integrado com abrir/criar, inserir, editar e excluir linhas, busca, substituição e salvar como.
+- **NEXUS Themes:** temas CYBER, MATRIX, MINIMAL e BL5CK aplicados à interface e ao relógio do Nexus.
 - Instalador com backup dos arquivos de inicialização e módulos em `$PREFIX/lib/termux-nexus/modules`.
 
 ## Comandos do Command Center
