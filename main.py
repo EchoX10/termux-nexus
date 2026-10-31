@@ -28,6 +28,7 @@ from modules.nano_theme import apply_theme as apply_nano_theme, remove_theme as 
 from modules.logs import run as logs_menu, log_event
 from modules.editor import run as editor_menu
 from modules.themes import run as themes_menu
+from modules.discord_studio import run as discord_studio_menu
 
 HOME = Path.home()
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "termux-nexus"
@@ -886,6 +887,7 @@ def main():
         print("[5] Digitar comandos no Termux")
         print("[6] NEXUS Logs")
         print("[7] NEXUS Editor")
+        print("[8] NEXUS Discord Bot Studio")
         print("[0] Sair")
 
         choice = live_input("\nNexus > ", cfg)
@@ -916,6 +918,10 @@ def main():
         elif choice == "7":
             log_event("Abriu NEXUS Editor")
             editor_menu(cfg)
+
+        elif choice == "8":
+            log_event("Abriu NEXUS Discord Bot Studio")
+            discord_studio_menu(cfg)
 
         elif choice == "0":
             break
