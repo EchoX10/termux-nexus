@@ -9,10 +9,20 @@ NANO_DIR = HOME / ".config" / "nano"
 THEME_FILE = NANO_DIR / "nexus.nanorc"
 NANORC = HOME / ".nanorc"
 INCLUDE_LINE = f'include "{THEME_FILE}"'
+OPTIONS_MARKER = "# NEXUS CYBER Nano options"
+INCLUDE_MARKER = "# NEXUS CYBER Nano theme"
 
-THEME = r"""# NEXUS CYBER — tema para GNU Nano
-# Interface em ciano, azul e cores neon.
+# As diretivas de cor precisam estar dentro de um bloco syntax.
+# O padrão genérico oferece realce básico em arquivos sem uma sintaxe específica.
+THEME = r"""# NEXUS CYBER — cores para GNU Nano
+syntax "nexus" ""
+color brightmagenta "\\<(def|class|return|if|else|elif|for|while|import|from|as|try|except|with|lambda|pass|break|continue|True|False|None)\\>"
+color brightgreen "\"[^\"]*\"|'[^']*'"
+color brightyellow "\\<[0-9]+\\>"
+color brightblack "#.*$"
+"""
 
+OPTIONS = """# NEXUS CYBER Nano options
 set linenumbers
 set mouse
 set constantshow
@@ -27,20 +37,43 @@ set functioncolor brightyellow
 set selectedcolor brightwhite,brightblue
 set errorcolor brightwhite,red
 set promptcolor brightcyan,black
-
-# Destaque geral de código
-color brightmagenta "\\<(def|class|return|if|else|elif|for|while|import|from|as|try|except|with|lambda|pass|break|continue|True|False|None)\\>"
-color brightgreen "\"[^\"]*\"|'[^']*'"
-color brightyellow "\\<[0-9]+\\>"
-color brightblack "#.*$"
 """
 
-def theme_status() -> bool:
-    """Retorna True quando o tema está incluído no ~/.nanorc."""
+
+def _read_nanorc() -> str:
     try:
-        return INCLUDE_LINE in NANORC.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return False
+        return NANORC.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return ""
+
+
+def _remove_managed_blocks(content: str) -> str:
+    """Remove somente blocos gerenciados pelo Nexus, mantendo o resto intacto."""
+    lines = content.splitlines()
+    kept = []
+    skip = False
+
+    for line in lines:
+        if line.strip() in (OPTIONS_MARKER, INCLUDE_MARKER):
+            skip = True
+            continue
+        if skip and line.startswith("set "):
+            continue
+        if skip and line.strip() == INCLUDE_LINE:
+            skip = False
+            continue
+        if skip:
+            # O bloco de opções termina na primeira linha que não é uma opção.
+            skip = False
+        kept.append(line)
+
+    return "\n".join(kept).rstrip()
+
+
+def theme_status() -> bool:
+    """Retorna True quando a integração está presente no ~/.nanorc."""
+    content = _read_nanorc().splitlines()
+    return OPTIONS_MARKER in content and INCLUDE_LINE in content
 
 
 def apply_theme() -> str:
@@ -48,42 +81,17 @@ def apply_theme() -> str:
     NANO_DIR.mkdir(parents=True, exist_ok=True)
     THEME_FILE.write_text(THEME, encoding="utf-8")
 
-    if NANORC.exists():
-        current = NANORC.read_text(encoding="utf-8")
-    else:
-        current = ""
+    current = _remove_managed_blocks(_read_nanorc())
+    blocks = [part for part in (current, OPTIONS.rstrip(), INCLUDE_MARKER + "\n" + INCLUDE_LINE) if part]
+    NANORC.write_text("\n\n".join(blocks) + "\n", encoding="utf-8")
 
-    if INCLUDE_LINE not in current.splitlines():
-        separator = "" if not current or current.endswith("\n") else "\n"
-        NANORC.write_text(
-            current + separator + "# NEXUS CYBER Nano theme\n" + INCLUDE_LINE + "\n",
-            encoding="utf-8"
-        )
-
-    return "Tema NEXUS CYBER ativado! Abra o Nano novamente para ver as mudanças."
+    return "Tema NEXUS CYBER corrigido e ativado! Feche e abra o Nano novamente."
 
 
 def remove_theme() -> str:
-    """Desativa somente a integração do Nexus e preserva o restante do ~/.nanorc."""
-    if NANORC.exists():
-        lines = NANORC.read_text(encoding="utf-8").splitlines()
-        kept = []
-        skip_marker = False
-
-        for line in lines:
-            if line.strip() == "# NEXUS CYBER Nano theme":
-                skip_marker = True
-                continue
-            if line.strip() == INCLUDE_LINE:
-                skip_marker = False
-                continue
-            kept.append(line)
-
-        while kept and not kept[-1].strip():
-            kept.pop()
-
-        content = "\n".join(kept)
-        NANORC.write_text(content + ("\n" if content else ""), encoding="utf-8")
+    """Remove apenas as configurações adicionadas pelo Nexus."""
+    current = _remove_managed_blocks(_read_nanorc())
+    NANORC.write_text(current + ("\n" if current else ""), encoding="utf-8")
 
     if THEME_FILE.exists():
         THEME_FILE.unlink()
@@ -93,4 +101,4 @@ def remove_theme() -> str:
     except OSError:
         pass
 
-    return "Tema NEXUS CYBER removido. Suas outras configurações do Nano foram preservadas."
+    return "Tema NEXUS CYBER removido. Suas outras configurações foram preservadas."
