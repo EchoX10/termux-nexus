@@ -107,50 +107,6 @@ def _secret(title, text):
     except (EOFError, KeyboardInterrupt):
         return ""
 
-ROOT = Path.home() / "NexusDiscordBots"
-RESET = "\033[0m"
-CYAN = "\033[96m"
-BLUE = "\033[94m"
-GREEN = "\033[92m"
-RED = "\033[91m"
-
-TEMPLATES = [
-    ("community", "Comunidade", "Boas-vindas, despedidas e comandos úteis"),
-    ("moderation", "Moderação", "Comandos de moderação e utilidades"),
-    ("support", "Suporte", "Base para atendimento e tickets"),
-    ("custom", "Personalizado", "Escolha exatamente os recursos"),
-]
-
-
-def _dialogs():
-    if input_dialog is None:
-        print("O Prompt Toolkit não está instalado. Execute novamente o instalador do Nexus.")
-        return False
-    return True
-
-
-def _ask(title, text, default=""):
-    result = input_dialog(title=title, text=text, default=default).run()
-    return None if result is None else str(result).strip()
-
-
-def _choose(title, text, choices):
-    return radiolist_dialog(title=title, text=text, values=choices).run()
-
-
-def _checks(title, text, choices):
-    result = checkboxlist_dialog(title=title, text=text, values=choices).run()
-    return result or []
-
-
-def _confirm(title, text):
-    return yes_no_dialog(title=title, text=text).run() is True
-
-
-def _notice(title, text):
-    message_dialog(title=title, text=text).run()
-
-
 def _slug(value):
     value = re.sub(r"[^a-zA-Z0-9_-]+", "-", value.strip()).strip("-_").lower()
     return value[:32] or "meu-bot"
@@ -510,8 +466,6 @@ def _manage_bot():
 
 
 def run(cfg=None):
-    if not _dialogs():
-        return
     ROOT.mkdir(parents=True, exist_ok=True)
     while True:
         os.system("clear")
