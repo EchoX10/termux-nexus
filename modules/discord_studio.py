@@ -197,7 +197,7 @@ async def ajuda(interaction: discord.Interaction):
     items.extend("/" + item.get("name", "") for item in SETTINGS.get("commands", []))
     await interaction.response.send_message("Comandos: " + ", ".join(items), ephemeral=True)
 
-''' + moderation_block + "\n" + welcome_block + "\n" + "".join(command_defs) + '''
+''' + moderation_block + "\n" + ticket_block + "\n" + welcome_block + "\n" + "".join(command_defs) + '''
 @client.event
 async def on_ready():
     await tree.sync()
