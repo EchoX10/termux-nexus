@@ -33,6 +33,7 @@ bash install.sh
 - **NEXUS Logs:** histórico local de atividades, visualização das últimas 100 linhas ou do histórico completo e limpeza com confirmação.
 - **NEXUS Editor:** editor de texto integrado com abrir/criar, inserir, editar e excluir linhas, busca, substituição e salvar como.
 - **NEXUS Themes:** temas CYBER, MATRIX, MINIMAL e BL5CK aplicados à interface e ao relógio do Nexus.
+- **NEXUS Discord Bot Studio:** construtor guiado no próprio Termux, com modelos, mensagens automáticas, comandos personalizados, moderação básica, tickets privados, geração de arquivos e link OAuth2 de convite. Os tokens ficam no `.env` local, fora do Git.
 - Instalador com backup dos arquivos de inicialização e módulos em `$PREFIX/lib/termux-nexus/modules`.
 
 ## Comandos do Command Center
@@ -63,3 +64,16 @@ Termux atualizado e Python 3. O instalador instala Prompt Toolkit para o relógi
 ## Licença
 
 MIT. Consulte [LICENSE](LICENSE).
+
+
+## NEXUS Discord Bot Studio
+
+Abra **[8] NEXUS Discord Bot Studio** na central de controle. A navegação usa caixas de diálogo no terminal: setas, Enter, seletores e campos de texto, sem exigir que a pessoa escreva código.
+
+Os projetos ficam em `~/NexusDiscordBots`. O Studio gera `bot.py`, `bot.json`, `requirements.txt` e `.env`. O token é salvo localmente no arquivo `.env`, com permissão restrita quando suportada; nunca publique esse arquivo nem envie o token em mensagens. O `.gitignore` do projeto exclui o segredo.
+
+Para conectar um bot, crie uma aplicação e um bot no [Discord Developer Portal](https://discord.com/developers/applications), copie o Application ID e o token diretamente para os campos correspondentes do Studio. Ative o **Server Members Intent** no portal se usar boas-vindas/despedidas. O convite usa OAuth2 com os escopos `bot` e `applications.commands`; revise as permissões antes de adicionar ao servidor.
+
+O comando de tickets cria um canal privado para quem abriu o atendimento e para o bot. A equipe do servidor deve receber acesso conforme as permissões e regras configuradas no próprio servidor. A função de moderação `/limpar` exige a permissão Gerenciar mensagens.
+
+O Studio instala `discord.py` e `python-dotenv` no primeiro início do bot. O processo roda no Termux em primeiro plano; use Ctrl+C para pará-lo.
