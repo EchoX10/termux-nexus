@@ -25,7 +25,8 @@ def run(cfg):
     dirty = False
     while True:
         os.system("clear")
-        print(f"{CYAN}╔══════════════════════════════════════╗")
+        accent = THEMES.get(cfg.get("theme"), THEMES["cyber"])["ansi"]
+        print(f"{accent}╔══════════════════════════════════════╗")
         print("║             NEXUS EDITOR             ║")
         print(f"╚══════════════════════════════════════╝{RESET}")
         print(f"Arquivo: {current if current else '(nenhum)'}" + ("  [ALTERAÇÕES]" if dirty else ""))
@@ -48,6 +49,8 @@ def run(cfg):
                 lines = _read(path)
                 current = path
                 dirty = False
+                from modules.logs import log_event
+                log_event(f"Editor abriu {path}")
                 print("Arquivo carregado." if path.exists() else "Novo arquivo (ainda não salvo).")
             except ValueError as error:
                 print(f"Erro: {error}")
@@ -116,6 +119,8 @@ def run(cfg):
                 target.write_text(data, encoding="utf-8")
                 current = target
                 dirty = False
+                from modules.logs import log_event
+                log_event(f"Editor salvou {target}")
                 print(f"Salvo: {target}")
             except OSError as error:
                 print(f"Não foi possível salvar: {error}")
