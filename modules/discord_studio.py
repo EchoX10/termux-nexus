@@ -28,7 +28,7 @@ TEMPLATES = [
 
 
 def _ask(title, text, default=""):
-    print("\\n" + CYAN + title + RESET)
+    print("\n" + CYAN + title + RESET)
     print(text)
     suffix = f" [{default}]" if default else ""
     try:
@@ -39,14 +39,14 @@ def _ask(title, text, default=""):
 
 
 def _choose(title, text, choices):
-    print("\\n" + CYAN + title + RESET)
+    print("\n" + CYAN + title + RESET)
     print(text)
     for index, item in enumerate(choices, 1):
         label = item[1] if len(item) > 1 else str(item[0])
         print(f"  [{index}] {label}")
     print("  [0] Voltar")
     try:
-        answer = input("\\nEscolha uma opção: ").strip()
+        answer = input("\nEscolha uma opção: ").strip()
     except (EOFError, KeyboardInterrupt):
         return None
     if not answer.isdigit():
@@ -61,7 +61,7 @@ def _choose(title, text, choices):
 def _checks(title, text, choices):
     selected = []
     while True:
-        print("\\n" + CYAN + title + RESET)
+        print("\n" + CYAN + title + RESET)
         print(text)
         for index, item in enumerate(choices, 1):
             mark = "X" if item[0] in selected else " "
@@ -82,7 +82,7 @@ def _checks(title, text, choices):
 
 
 def _confirm(title, text):
-    print("\\n" + CYAN + title + RESET)
+    print("\n" + CYAN + title + RESET)
     print(text)
     try:
         return input("[s/N] > ").strip().lower() in ("s", "sim")
@@ -91,16 +91,16 @@ def _confirm(title, text):
 
 
 def _notice(title, text):
-    print("\\n" + CYAN + title + RESET)
+    print("\n" + CYAN + title + RESET)
     print(text)
     try:
-        input("\\nPressione Enter para continuar...")
+        input("\nPressione Enter para continuar...")
     except (EOFError, KeyboardInterrupt):
         pass
 
 
 def _secret(title, text):
-    print("\\n" + CYAN + title + RESET)
+    print("\n" + CYAN + title + RESET)
     print(text)
     try:
         return getpass.getpass("Token (entrada oculta): ").strip()
