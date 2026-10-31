@@ -24,6 +24,7 @@ from modules.lab import run as lab_menu
 from modules.command_center import run as command_center_menu
 from modules.terminal_mode import run as terminal_mode_menu
 from modules.ascii_banner import render_ascii
+from modules.nano_theme import apply_theme as apply_nano_theme, remove_theme as remove_nano_theme, theme_status as nano_theme_status
 
 HOME = Path.home()
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "termux-nexus"
@@ -586,6 +587,7 @@ def settings(cfg):
         print("[4] Caixa de ferramentas")
         print("[5] Informações do sistema")
         print("[6] Restaurar padrões")
+        print(f"[7] Tema do Nano: {'NEXUS CYBER ativo' if nano_theme_status() else 'desativado'}")
         print("[0] Sair")
 
         choice = live_input("\nNexus/config > ", cfg)
@@ -641,6 +643,38 @@ def settings(cfg):
         elif choice == "6":
             cfg = DEFAULTS.copy()
             save_config(cfg)
+
+        elif choice == "7":
+            while True:
+                os.system("clear")
+                banner(cfg)
+                print("NEXUS CYBER • NANO EDITOR\\n")
+                print("[1] Ativar tema NEXUS CYBER")
+                print("[2] Remover tema do Nano")
+                print("[3] Ver estado atual")
+                print("[0] Voltar")
+                nano_choice = live_input("\\nNexus/nano > ", cfg)
+
+                if nano_choice == "1":
+                    try:
+                        message = apply_nano_theme()
+                        print(f"\\n{message}")
+                    except OSError as error:
+                        print(f"\\nNão foi possível configurar o Nano: {error}")
+                    pause()
+                elif nano_choice == "2":
+                    try:
+                        print(f"\\n{remove_nano_theme()}")
+                    except OSError as error:
+                        print(f"\\nNão foi possível remover o tema: {error}")
+                    pause()
+                elif nano_choice == "3":
+                    print("\\nTema NEXUS CYBER: " + ("ATIVO" if nano_theme_status() else "DESATIVADO"))
+                    print("Arquivo do tema: ~/.config/nano/nexus.nanorc")
+                    print("Integração: ~/.nanorc")
+                    pause()
+                elif nano_choice == "0":
+                    break
 
         elif choice == "0":
             return
