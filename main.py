@@ -25,6 +25,9 @@ from modules.command_center import run as command_center_menu
 from modules.terminal_mode import run as terminal_mode_menu
 from modules.ascii_banner import render_ascii
 from modules.nano_theme import apply_theme as apply_nano_theme, remove_theme as remove_nano_theme, theme_status as nano_theme_status
+from modules.logs import run as logs_menu, log_event
+from modules.editor import run as editor_menu
+from modules.themes import run as themes_menu
 
 HOME = Path.home()
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "termux-nexus"
@@ -42,7 +45,11 @@ COLORS = {
     "green": "\033[92m",
     "blue": "\033[94m",
     "magenta": "\033[95m",
-    "white": "\033[97m"
+    "white": "\033[97m",
+    "cyber": "\033[96m",
+    "matrix": "\033[92m",
+    "minimal": "\033[97m",
+    "bl5ck": "\033[95m"
 }
 
 RESET = "\033[0m"
@@ -89,7 +96,11 @@ def live_input(prompt_text, cfg):
             "green": "#00ff66",
             "blue": "#5599ff",
             "magenta": "#ff55ff",
-            "white": "#ffffff"
+            "white": "#ffffff",
+            "cyber": "#00e5ff",
+            "matrix": "#39ff14",
+            "minimal": "#d6d6d6",
+            "bl5ck": "#b56cff"
         }
 
         clock_color = theme_colors.get(
@@ -588,6 +599,7 @@ def settings(cfg):
         print("[5] Informações do sistema")
         print("[6] Restaurar padrões")
         print(f"[7] Tema do Nano: {'NEXUS CYBER ativo' if nano_theme_status() else 'desativado'}")
+        print(f"[8] NEXUS Themes: {cfg.get('theme', 'cyan').upper()}")
         print("[0] Sair")
 
         choice = live_input("\nNexus/config > ", cfg)
@@ -675,6 +687,9 @@ def settings(cfg):
                     pause()
                 elif nano_choice == "0":
                     break
+
+        elif choice == "8":
+            themes_menu(cfg, save_config)
 
         elif choice == "0":
             return
@@ -868,25 +883,38 @@ def main():
         print("[3] Informações do sistema")
         print("[4] Atualizar Termux Nexus")
         print("[5] Digitar comandos no Termux")
+        print("[6] NEXUS Logs")
+        print("[7] NEXUS Editor")
         print("[0] Sair")
 
         choice = live_input("\nNexus > ", cfg)
 
         if choice == "1":
+            log_event("Abriu Personalização")
             settings(cfg)
             cfg = load_config()
 
         elif choice == "2":
+            log_event("Abriu Caixa de ferramentas")
             tools_menu(cfg)
 
         elif choice == "3":
             show_system(cfg)
 
         elif choice == "4":
+            log_event("Iniciou verificação de atualização")
             update_nexus(cfg)
 
         elif choice == "5":
+            log_event("Entrou no NEXUS Terminal")
             terminal_mode_menu(cfg)
+
+        elif choice == "6":
+            logs_menu(cfg)
+
+        elif choice == "7":
+            log_event("Abriu NEXUS Editor")
+            editor_menu(cfg)
 
         elif choice == "0":
             break
