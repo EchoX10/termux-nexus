@@ -125,6 +125,26 @@ async def on_member_remove(member):
             await channel.send(text.replace("{user}", member.display_name).replace("{server}", member.guild.name))
 """
 
+    ticket_block = ""
+    if config.get("tickets"):
+        ticket_block = """
+@tree.command(name="ticket", description="Abre um canal privado de atendimento")
+async def ticket(interaction: discord.Interaction):
+    if interaction.guild is None:
+        await interaction.response.send_message("Use este comando dentro de um servidor.", ephemeral=True)
+        return
+    guild = interaction.guild
+    overwrites = {
+        guild.default_role: discord.PermissionOverwrite(view_channel=False),
+        interaction.user: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True),
+        guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True, read_message_history=True, manage_channels=True),
+    }
+    safe_name = "ticket-" + re.sub(r"[^a-z0-9-]", "", interaction.user.name.lower())[:20]
+    channel = await guild.create_text_channel(safe_name or "ticket", overwrites=overwrites, reason="Ticket solicitado pelo membro")
+    await channel.send(f"Atendimento aberto por {interaction.user.mention}. A equipe pode acessar este canal conforme as permissões do servidor.")
+    await interaction.response.send_message(f"Seu ticket foi criado: {channel.mention}", ephemeral=True)
+"""
+
     moderation_block = ""
     if config.get("moderation"):
         moderation_block = """
@@ -148,6 +168,7 @@ async def limpar_error(interaction: discord.Interaction, error):
     return '''# Gerado pelo NEXUS Discord Bot Studio
 import json
 import os
+import re
 import discord
 from discord import app_commands
 from dotenv import load_dotenv
