@@ -9,18 +9,103 @@ import sys
 from pathlib import Path
 from urllib.parse import urlencode
 
-try:
-    from prompt_toolkit.shortcuts import (
-        checkboxlist_dialog,
-        input_dialog,
-        message_dialog,
-        password_dialog,
-        radiolist_dialog,
-        yes_no_dialog,
-    )
-except ImportError:
-    checkboxlist_dialog = input_dialog = message_dialog = None
-    password_dialog = radiolist_dialog = yes_no_dialog = None
+import getpass
+
+ROOT = Path.home() / "NexusDiscordBots"
+RESET = "\033[0m"
+CYAN = "\033[96m"
+BLUE = "\033[94m"
+GREEN = "\033[92m"
+RED = "\033[91m"
+
+
+TEMPLATES = [
+    ("community", "Comunidade", "Boas-vindas, despedidas e comandos úteis"),
+    ("moderation", "Moderação", "Comandos de moderação e utilidades"),
+    ("support", "Suporte", "Base para atendimento e tickets"),
+    ("custom", "Personalizado", "Escolha exatamente os recursos"),
+]
+
+
+def _ask(title, text, default=""):
+    print("\\n" + CYAN + title + RESET)
+    print(text)
+    suffix = f" [{default}]" if default else ""
+    try:
+        value = input("> " + suffix + " ").strip()
+    except (EOFError, KeyboardInterrupt):
+        return None
+    return value if value else (default if default else "")
+
+
+def _choose(title, text, choices):
+    print("\\n" + CYAN + title + RESET)
+    print(text)
+    for index, item in enumerate(choices, 1):
+        label = item[1] if len(item) > 1 else str(item[0])
+        print(f"  [{index}] {label}")
+    print("  [0] Voltar")
+    try:
+        answer = input("\\nEscolha uma opção: ").strip()
+    except (EOFError, KeyboardInterrupt):
+        return None
+    if not answer.isdigit():
+        print("Opção inválida.")
+        return None
+    number = int(answer)
+    if number == 0 or number > len(choices):
+        return None
+    return choices[number - 1][0]
+
+
+def _checks(title, text, choices):
+    selected = []
+    while True:
+        print("\\n" + CYAN + title + RESET)
+        print(text)
+        for index, item in enumerate(choices, 1):
+            mark = "X" if item[0] in selected else " "
+            print(f"  [{mark}] {index}. {item[1]}")
+        print("  [D] Concluir seleção")
+        try:
+            answer = input("Digite o número para alternar: ").strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            return selected
+        if answer == "d":
+            return selected
+        if answer.isdigit() and 1 <= int(answer) <= len(choices):
+            key = choices[int(answer) - 1][0]
+            if key in selected:
+                selected.remove(key)
+            else:
+                selected.append(key)
+
+
+def _confirm(title, text):
+    print("\\n" + CYAN + title + RESET)
+    print(text)
+    try:
+        return input("[s/N] > ").strip().lower() in ("s", "sim")
+    except (EOFError, KeyboardInterrupt):
+        return False
+
+
+def _notice(title, text):
+    print("\\n" + CYAN + title + RESET)
+    print(text)
+    try:
+        input("\\nPressione Enter para continuar...")
+    except (EOFError, KeyboardInterrupt):
+        pass
+
+
+def _secret(title, text):
+    print("\\n" + CYAN + title + RESET)
+    print(text)
+    try:
+        return getpass.getpass("Token (entrada oculta): ").strip()
+    except (EOFError, KeyboardInterrupt):
+        return ""
 
 ROOT = Path.home() / "NexusDiscordBots"
 RESET = "\033[0m"
@@ -307,7 +392,7 @@ def _configure_bot(folder):
             elif value:
                 _notice("ID inválido", "O Application ID deve conter apenas números.")
         elif choice == "token":
-            token = password_dialog(title="Token privado", text="Cole o token do bot. Ele será salvo somente no arquivo .env local:").run()
+            token = _secret("Token privado", "Cole o token do bot. Ele será salvo somente no arquivo .env local:")
             if token:
                 env_file = folder / ".env"
                 old = env_file.read_text(encoding="utf-8") if env_file.exists() else ""
@@ -441,16 +526,16 @@ def run(cfg=None):
         print("  [2] Meus bots / Gerenciar")
         print("  [3] Abrir pasta dos projetos")
         print("  [0] Voltar ao NEXUS\n")
-        choice = radiolist_dialog(
-            title="NEXUS Discord Bot Studio",
-            text="Use as setas e Enter para navegar:",
-            values=[
+        choice = _choose(
+            "NEXUS Discord Bot Studio",
+            "Digite o número da opção desejada:",
+            [
                 ("create", "Criar novo bot"),
                 ("manage", "Meus bots / Gerenciar"),
                 ("folder", "Abrir pasta dos projetos"),
                 ("back", "Voltar ao NEXUS"),
             ],
-        ).run()
+        )
         if choice in (None, "back"):
             return
         if choice == "create":
