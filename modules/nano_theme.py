@@ -13,12 +13,13 @@ OPTIONS_MARKER = "# NEXUS CYBER Nano options"
 INCLUDE_MARKER = "# NEXUS CYBER Nano theme"
 
 # As diretivas de cor precisam estar dentro de um bloco syntax.
-# O padrão genérico oferece realce básico em arquivos sem uma sintaxe específica.
+# ".*" funciona como sintaxe genérica de fallback; sintaxes específicas
+# carregadas pelo Nano continuam podendo tratar seus próprios arquivos.
 THEME = r"""# NEXUS CYBER — cores para GNU Nano
-syntax "nexus" ""
-color brightmagenta "\\<(def|class|return|if|else|elif|for|while|import|from|as|try|except|with|lambda|pass|break|continue|True|False|None)\\>"
+syntax "nexus" ".*"
+color brightmagenta "\<(def|class|return|if|else|elif|for|while|import|from|as|try|except|with|lambda|pass|break|continue|True|False|None)\>"
 color brightgreen "\"[^\"]*\"|'[^']*'"
-color brightyellow "\\<[0-9]+\\>"
+color brightyellow "\<[0-9]+\>"
 color brightblack "#.*$"
 """
 
@@ -63,7 +64,6 @@ def _remove_managed_blocks(content: str) -> str:
             skip = False
             continue
         if skip:
-            # O bloco de opções termina na primeira linha que não é uma opção.
             skip = False
         kept.append(line)
 
