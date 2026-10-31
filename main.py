@@ -23,6 +23,7 @@ from modules.radar import run as radar_menu
 from modules.lab import run as lab_menu
 from modules.command_center import run as command_center_menu
 from modules.terminal_mode import run as terminal_mode_menu
+from modules.ascii_banner import render_ascii
 
 HOME = Path.home()
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "termux-nexus"
@@ -31,6 +32,7 @@ CONFIG_FILE = CONFIG_DIR / "config.json"
 DEFAULTS = {
     "theme": "cyan",
     "banner": "COOLKID",
+    "banner_ascii": False,
     "show_clock": True
 }
 
@@ -139,7 +141,12 @@ def banner(cfg):
 """ + RESET)
 
     label = cfg.get("banner", "NEXUS")[:24]
-    print(c + f"  {label}" + RESET)
+    if cfg.get("banner_ascii", False):
+        art = render_ascii(label)
+        for line in art.splitlines():
+            print(c + "  " + line + RESET)
+    else:
+        print(c + f"  {label}" + RESET)
     print()
 
 
@@ -572,8 +579,9 @@ def settings(cfg):
         banner(cfg)
 
         print("CONFIGURAÇÕES\n")
+        banner_mode = "ASCII grande" if cfg.get("banner_ascii", False) else "normal"
         print(f"[1] Cor: {cfg['theme']}")
-        print(f"[2] Texto personalizado: {cfg['banner']}")
+        print(f"[2] Editar banner: {cfg['banner']} ({banner_mode})")
         print(f"[3] Relógio: {'ligado' if cfg['show_clock'] else 'desligado'}")
         print("[4] Caixa de ferramentas")
         print("[5] Informações do sistema")
@@ -592,13 +600,33 @@ def settings(cfg):
                 save_config(cfg)
 
         elif choice == "2":
-            value = input(
-                "Novo texto (máximo 24 caracteres): "
-            ).strip()[:24]
+            print("\nEDITOR DE BANNER")
+            print("[1] Texto normal")
+            print("[2] Texto grande em ASCII")
+            mode = input("Escolha o estilo > ").strip()
 
-            if value:
-                cfg["banner"] = value
-                save_config(cfg)
+            if mode == "1":
+                value = input("Digite o banner (máximo 24 caracteres): ").strip()[:24]
+                if value:
+                    cfg["banner"] = value
+                    cfg["banner_ascii"] = False
+                    save_config(cfg)
+
+            elif mode == "2":
+                value = input("Digite o texto para transformar em ASCII (máximo 8 caracteres): ").strip()
+                if value:
+                    value = value[:8].upper()
+                    print("\nPRÉVIA DO BANNER:\n")
+                    print(paint(cfg) + render_ascii(value) + RESET)
+                    confirm = input("\nSalvar esse banner? [S/N] > ").strip().lower()
+                    if confirm in ("s", "sim"):
+                        cfg["banner"] = value
+                        cfg["banner_ascii"] = True
+                        save_config(cfg)
+                        print("Banner ASCII salvo!")
+                    else:
+                        print("Alteração cancelada.")
+                    pause()
 
         elif choice == "3":
             cfg["show_clock"] = not cfg["show_clock"]
