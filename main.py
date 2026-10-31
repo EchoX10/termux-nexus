@@ -109,6 +109,7 @@ def live_input(prompt_text, cfg):
         )
 
         style = Style.from_dict({
+            "prompt": f"fg:{clock_color} bold",
             "bottom-toolbar": f"fg:{clock_color} bg:#151515"
         })
 
