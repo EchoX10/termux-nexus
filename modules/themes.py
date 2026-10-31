@@ -15,7 +15,8 @@ def run(cfg, save_config):
     while True:
         os.system("clear")
         active = cfg.get("theme", "cyber")
-        print("\033[96mNEXUS THEMES\033[0m\n")
+        accent = THEMES.get(active, THEMES["cyber"])["ansi"]
+        print(f"{accent}NEXUS THEMES\033[0m\n")
         for key, theme in THEMES.items():
             mark = "  < ATIVO" if key == active else ""
             print(f"[{key}] {theme['label']}{mark}")
