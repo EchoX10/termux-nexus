@@ -37,6 +37,7 @@ def run(cfg):
         print("[0] Voltar")
         choice = input("\nNexus/logs > ").strip()
         if choice in ("1", "2"):
+            log_event("Consultou o histórico de atividades")
             try:
                 lines = LOG_FILE.read_text(encoding="utf-8").splitlines()
                 if choice == "1":
