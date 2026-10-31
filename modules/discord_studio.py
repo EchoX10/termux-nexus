@@ -192,6 +192,8 @@ async def ajuda(interaction: discord.Interaction):
     items = ["/ping", "/ajuda"]
     if SETTINGS.get("moderation"):
         items.append("/limpar (requer Gerenciar mensagens)")
+    if SETTINGS.get("tickets"):
+        items.append("/ticket (abre canal privado)")
     items.extend("/" + item.get("name", "") for item in SETTINGS.get("commands", []))
     await interaction.response.send_message("Comandos: " + ", ".join(items), ephemeral=True)
 
@@ -365,6 +367,8 @@ def _invite(folder, config):
     permissions = 0
     if config.get("moderation"):
         permissions |= 8192
+    if config.get("tickets"):
+        permissions |= 16
     params = urlencode({
         "client_id": client_id,
         "scope": "bot applications.commands",
