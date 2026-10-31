@@ -600,7 +600,7 @@ def settings(cfg):
                 save_config(cfg)
 
         elif choice == "2":
-            print("\\nEDITOR DE BANNER")
+            print("\nEDITOR DE BANNER")
             print("[1] Texto normal")
             print("[2] Texto grande em ASCII")
             mode = input("Escolha o estilo > ").strip()
@@ -616,9 +616,9 @@ def settings(cfg):
                 value = input("Digite o texto para transformar em ASCII (máximo 8 caracteres): ").strip()
                 if value:
                     value = value[:8].upper()
-                    print("\\nPRÉVIA DO BANNER:\\n")
+                    print("\nPRÉVIA DO BANNER:\n")
                     print(paint(cfg) + render_ascii(value) + RESET)
-                    confirm = input("\\nSalvar esse banner? [S/N] > ").strip().lower()
+                    confirm = input("\nSalvar esse banner? [S/N] > ").strip().lower()
                     if confirm in ("s", "sim"):
                         cfg["banner"] = value
                         cfg["banner_ascii"] = True
