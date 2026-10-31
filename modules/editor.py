@@ -3,7 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 import os
 
-CYAN="\033[96m"; DIM="\033[90m"; RESET="\033[0m"
+from modules.themes import THEMES
+DIM="\033[90m"; RESET="\033[0m"
 
 def _show(lines, start=0):
     for i, line in enumerate(lines, start + 1):
