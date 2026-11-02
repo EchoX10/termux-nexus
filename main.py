@@ -716,8 +716,18 @@ def settings(cfg):
         elif choice == "3":
             print("\nBANNER POR IMAGEM • ANSI TRUE COLOR")
             print("Formatos suportados: PNG, JPG, JPEG, WEBP, BMP e GIF (primeiro quadro).")
-            print("Dica: conceda acesso aos arquivos com termux-setup-storage.")
-            image_value = input("\nCaminho da imagem > ").strip().strip('"').strip("'")
+            storage_command = shutil.which("termux-setup-storage")
+            if storage_command:
+                print("\\nVerificando acesso ao armazenamento do Android...")
+                try:
+                    subprocess.run([storage_command], check=False)
+                    print("Se o Android mostrar uma solicitação de permissão, autorize o acesso.")
+                except OSError as error:
+                    print(f"Não foi possível abrir a configuração de armazenamento: {error}")
+            else:
+                print("Comando termux-setup-storage não encontrado. Instale/atualize termux-tools.")
+
+            image_value = input("\\nCaminho da imagem > ").strip().strip('"').strip("'")
             if image_value:
                 image_path = Path(image_value).expanduser()
                 if not image_path.is_file():
