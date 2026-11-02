@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import shutil
+import subprocess
+import time
 from pathlib import Path
 
 
@@ -56,3 +58,26 @@ def print_image_banner(path: str | Path) -> None:
     """Imprime banner sem prefixos laterais que poderiam provocar quebra de linha."""
     for line in render_image(path):
         print(line)
+
+
+def pick_image(destination: str | Path) -> Path | None:
+    """Abre o seletor de arquivos do Android pelo Termux:API."""
+    picker = shutil.which("termux-storage-get")
+    if not picker:
+        raise RuntimeError(
+            "Seletor do Android indisponível. Instale o pacote com "
+            "'pkg install termux-api' e o aplicativo Termux:API."
+        )
+
+    base = Path(destination).expanduser()
+    base.parent.mkdir(parents=True, exist_ok=True)
+    target = base.with_name(f"{base.stem}-{time.time_ns()}{base.suffix}")
+    try:
+        result = subprocess.run([picker, str(target)], check=False)
+    except OSError as error:
+        raise RuntimeError(f"Não foi possível abrir o seletor: {error}") from error
+
+    if result.returncode != 0 or not target.is_file() or target.stat().st_size == 0:
+        target.unlink(missing_ok=True)
+        return None
+    return target

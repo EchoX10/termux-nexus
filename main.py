@@ -727,30 +727,29 @@ def settings(cfg):
             else:
                 print("Comando termux-setup-storage não encontrado. Instale/atualize termux-tools.")
 
-            image_value = input("\nCaminho da imagem > ").strip().strip('"').strip("'")
-            if image_value:
-                image_path = Path(image_value).expanduser()
-                if not image_path.is_file():
-                    print("\nArquivo não encontrado.")
+            try:
+                from modules.image_banner import pick_image, render_image
+                image_path = pick_image(CONFIG_DIR / "banner-selected.img")
+                if image_path is None:
+                    print("\nNenhuma imagem foi selecionada.")
                     pause()
                 else:
-                    try:
-                        from modules.image_banner import render_image
-                        preview = render_image(image_path)
-                        print("\nPRÉVIA (ajustada à largura atual):\n")
-                        for line in preview:
-                            print(line)
-                        confirm = input("\nUsar essa imagem como banner? [S/N] > ").strip().lower()
-                        if confirm in ("s", "sim"):
-                            cfg["banner_image"] = str(image_path.resolve())
-                            cfg["banner_ascii"] = False
-                            save_config(cfg)
-                            print("Banner por imagem salvo!")
-                        else:
-                            print("Alteração cancelada.")
-                    except (OSError, ValueError, RuntimeError) as error:
-                        print(f"\nNão foi possível converter a imagem: {error}")
+                    preview = render_image(image_path)
+                    print("\nPRÉVIA (ajustada à largura atual):\n")
+                    for line in preview:
+                        print(line)
+                    confirm = input("\nUsar essa imagem como banner? [S/N] > ").strip().lower()
+                    if confirm in ("s", "sim"):
+                        cfg["banner_image"] = str(image_path.resolve())
+                        cfg["banner_ascii"] = False
+                        save_config(cfg)
+                        print("Banner por imagem salvo!")
+                    else:
+                        print("Alteração cancelada.")
                     pause()
+            except (OSError, ValueError, RuntimeError) as error:
+                print(f"\nNão foi possível selecionar/converter a imagem: {error}")
+                pause()
 
         elif choice == "4":
             cfg["show_clock"] = not cfg["show_clock"]
