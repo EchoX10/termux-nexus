@@ -19,7 +19,7 @@ def _pillow_image():
 
 
 def render_image(path: str | Path, max_width: int | None = None) -> list[str]:
-    """Converte a imagem em linhas de blocos RGB, limitadas à largura do terminal."""
+    """Renderiza dois pixels por caractere usando ANSI True Color."""
     Image = _pillow_image()
     source = Path(path).expanduser()
 
@@ -31,28 +31,38 @@ def render_image(path: str | Path, max_width: int | None = None) -> list[str]:
     width_limit = max(12, min(terminal_width - 4, max_width or terminal_width - 4))
 
     with Image.open(source) as original:
-        image = original.convert("RGB")
+        image = original.convert("RGBA")
 
     source_width, source_height = image.size
     if source_width < 1 or source_height < 1:
         raise ValueError("A imagem está vazia.")
 
-    # Células de terminal são aproximadamente duas vezes mais altas que largas.
-    output_height = max(1, round(width_limit * source_height / source_width * 0.5))
+    # Transparência é composta sobre preto, como o fundo padrão do NEXUS.
+    background = Image.new("RGBA", image.size, (0, 0, 0, 255))
+    image = Image.alpha_composite(background, image).convert("RGB")
+
+    # Um caractere de terminal tem aproximadamente metade da largura da altura.
+    # Com dois pixels por caractere (▀), cada pixel fica visualmente quase quadrado.
+    output_height = max(1, round(width_limit * source_height / source_width))
     image = image.resize((width_limit, output_height), Image.Resampling.LANCZOS)
 
-    # Centraliza sem ampliar imagens pequenas e mantém as dimensões dentro do terminal.
     lines = []
-    for y in range(image.height):
+    black = (0, 0, 0)
+    for y in range(0, image.height, 2):
         parts = []
         for x in range(image.width):
-            red, green, blue = image.getpixel((x, y))
-            parts.append(f"\033[38;2;{red};{green};{blue}m█")
-        parts.append("\033[0m")
+            top = image.getpixel((x, y))
+            bottom = image.getpixel((x, y + 1)) if y + 1 < image.height else black
+            red, green, blue = top
+            bg_red, bg_green, bg_blue = bottom
+            parts.append(
+                f"\\033[38;2;{red};{green};{blue};"
+                f"48;2;{bg_red};{bg_green};{bg_blue}m▀"
+            )
+        parts.append("\\033[0m")
         lines.append("".join(parts))
 
     return lines
-
 
 def print_image_banner(path: str | Path) -> None:
     """Imprime banner sem prefixos laterais que poderiam provocar quebra de linha."""
