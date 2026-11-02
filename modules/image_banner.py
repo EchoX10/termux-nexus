@@ -105,20 +105,42 @@ def pick_image(destination: str | Path) -> Path | None:
     except OSError as error:
         raise RuntimeError(f"Falha ao executar o seletor: {error}") from error
 
+    print(f"\n[DIAGNÓSTICO] Código de saída inicial: {result.returncode}")
+    if result.returncode != 0:
+        temporary.unlink(missing_ok=True)
+        raise RuntimeError(
+            f"O comando do seletor terminou com código {result.returncode}."
+        )
+
+    # O Termux:API pode iniciar a Activity Android e devolver o controle ao
+    # processo antes de StorageActivity terminar a cópia do conteúdo escolhido.
+    # Aguarda o arquivo aparecer e estabilizar, em vez de verificar cedo demais.
+    print("[DIAGNÓSTICO] Aguardando o Android concluir a cópia...")
+    deadline = time.monotonic() + 120
+    last_size = -1
+    stable_checks = 0
+    while time.monotonic() < deadline:
+        if temporary.is_file():
+            current_size = temporary.stat().st_size
+            if current_size > 0 and current_size == last_size:
+                stable_checks += 1
+                if stable_checks >= 3:
+                    break
+            else:
+                stable_checks = 0
+            last_size = current_size
+        time.sleep(0.25)
+
     exists = temporary.is_file()
     size = temporary.stat().st_size if exists else 0
-    print(f"\n[DIAGNÓSTICO] Código de saída: {result.returncode}")
     print(f"[DIAGNÓSTICO] Arquivo criado: {'sim' if exists else 'não'}")
     print(f"[DIAGNÓSTICO] Tamanho recebido: {size} bytes")
 
     if not exists or size == 0:
         temporary.unlink(missing_ok=True)
-        if result.returncode != 0:
-            raise RuntimeError(
-                f"Seletor retornou código {result.returncode}; nenhum arquivo foi recebido em {temporary}."
-            )
         raise RuntimeError(
-            f"O seletor terminou sem erro, mas não criou o arquivo esperado: {temporary}"
+            "O Android não entregou o arquivo em até 120 segundos. "
+            "Verifique se a seleção foi concluída ou cancelada."
         )
 
     try:
