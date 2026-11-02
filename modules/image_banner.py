@@ -60,14 +60,48 @@ def print_image_banner(path: str | Path) -> None:
         print(line)
 
 
+TERMUX_API_DOWNLOAD = "https://f-droid.org/packages/com.termux.api/"
+
+
+def ensure_termux_api() -> None:
+    """Instala o pacote CLI e orienta a instalação do complemento Android."""
+    if not shutil.which("termux-storage-get"):
+        pkg = shutil.which("pkg")
+        if not pkg:
+            raise RuntimeError("O comando pkg não foi encontrado no Termux.")
+        print("\\nInstalando as ferramentas Termux:API...")
+        result = subprocess.run([pkg, "install", "-y", "termux-api"], check=False)
+        if result.returncode != 0 or not shutil.which("termux-storage-get"):
+            raise RuntimeError("Não foi possível instalar o pacote termux-api.")
+
+    pm = shutil.which("pm")
+    companion_installed = False
+    if pm:
+        try:
+            check = subprocess.run([pm, "path", "com.termux.api"], capture_output=True, text=True, check=False)
+            companion_installed = check.returncode == 0 and "package:" in check.stdout
+        except OSError:
+            pass
+
+    if not companion_installed:
+        print("\\nO aplicativo complementar Termux:API não foi encontrado.")
+        print("Abrindo a página oficial para instalar o complemento...")
+        opener = shutil.which("termux-open-url")
+        if opener:
+            subprocess.run([opener, TERMUX_API_DOWNLOAD], check=False)
+        else:
+            am = shutil.which("am")
+            if am:
+                subprocess.run([am, "start", "-a", "android.intent.action.VIEW", "-d", TERMUX_API_DOWNLOAD], check=False)
+        raise RuntimeError("Instale o aplicativo complementar e tente novamente.")
+
+
 def pick_image(destination: str | Path) -> Path | None:
-    """Abre o seletor de arquivos do Android pelo Termux:API."""
+    """Abre o seletor do Android e confirma a imagem pelo arquivo gravado."""
+    ensure_termux_api()
     picker = shutil.which("termux-storage-get")
     if not picker:
-        raise RuntimeError(
-            "Seletor do Android indisponível. Instale o pacote com "
-            "'pkg install termux-api' e o aplicativo Termux:API."
-        )
+        raise RuntimeError("termux-storage-get não ficou disponível após a instalação.")
 
     base = Path(destination).expanduser()
     base.parent.mkdir(parents=True, exist_ok=True)
@@ -77,7 +111,11 @@ def pick_image(destination: str | Path) -> Path | None:
     except OSError as error:
         raise RuntimeError(f"Não foi possível abrir o seletor: {error}") from error
 
-    if result.returncode != 0 or not target.is_file() or target.stat().st_size == 0:
+    # O arquivo é a confirmação mais confiável; não descarte uma imagem válida
+    # apenas porque uma versão do comando retornou um código diferente de zero.
+    if not target.is_file() or target.stat().st_size == 0:
         target.unlink(missing_ok=True)
+        if result.returncode != 0:
+            raise RuntimeError("O seletor não retornou uma imagem. Confira a instalação do Termux:API.")
         return None
     return target
