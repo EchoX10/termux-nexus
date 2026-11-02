@@ -39,7 +39,7 @@ def render_image(path: str | Path, max_width: int | None = None) -> list[str]:
 
     # Células de terminal são aproximadamente duas vezes mais altas que largas.
     output_height = max(1, round(width_limit * source_height / source_width * 0.5))
-    image.thumbnail((width_limit, output_height), Image.Resampling.LANCZOS)
+    image = image.resize((width_limit, output_height), Image.Resampling.LANCZOS)
 
     # Centraliza sem ampliar imagens pequenas e mantém as dimensões dentro do terminal.
     lines = []
