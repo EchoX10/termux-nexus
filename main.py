@@ -24,6 +24,7 @@ from modules.lab import run as lab_menu
 from modules.command_center import run as command_center_menu
 from modules.terminal_mode import run as terminal_mode_menu
 from modules.ascii_banner import render_ascii
+from modules.image_banner import print_image_banner
 from modules.nano_theme import apply_theme as apply_nano_theme, remove_theme as remove_nano_theme, theme_status as nano_theme_status
 from modules.logs import run as logs_menu, log_event
 from modules.editor import run as editor_menu
@@ -38,6 +39,7 @@ DEFAULTS = {
     "theme": "cyan",
     "banner": "COOLKID",
     "banner_ascii": False,
+    "banner_image": "",
     "show_clock": True
 }
 
@@ -139,6 +141,19 @@ def live_input(prompt_text, cfg):
 
 def banner(cfg):
     c = paint(cfg)
+    image_path = cfg.get("banner_image", "").strip()
+
+    if image_path:
+        try:
+            print_image_banner(image_path)
+            print(c + "  TERMUX NEXUS  •  1.0.0" + RESET)
+            print()
+            return
+        except (OSError, ValueError, RuntimeError) as error:
+            print(c + f"  Banner por imagem indisponível: {error}" + RESET)
+            print(c + "  TERMUX NEXUS  •  1.0.0" + RESET)
+            print()
+            return
 
     print(c + r"""
 ╔════════════════════════════════════════════════════════════╗
@@ -646,24 +661,23 @@ def settings(cfg):
         banner(cfg)
 
         print("CONFIGURAÇÕES\n")
-        banner_mode = "ASCII grande" if cfg.get("banner_ascii", False) else "normal"
+        banner_mode = "imagem" if cfg.get("banner_image") else ("ASCII grande" if cfg.get("banner_ascii", False) else "normal")
         print(f"[1] Cor: {cfg['theme']}")
-        print(f"[2] Editar banner: {cfg['banner']} ({banner_mode})")
-        print(f"[3] Relógio: {'ligado' if cfg['show_clock'] else 'desligado'}")
-        print("[4] Caixa de ferramentas")
-        print("[5] Informações do sistema")
-        print("[6] Restaurar padrões")
-        print(f"[7] Tema do Nano: {'NEXUS CYBER ativo' if nano_theme_status() else 'desativado'}")
-        print(f"[8] NEXUS Themes: {cfg.get('theme', 'cyan').upper()}")
+        print(f"[2] Editar banner de texto: {cfg['banner']} ({banner_mode})")
+        print("[3] Banner por imagem (ANSI True Color)")
+        print(f"[4] Relógio: {'ligado' if cfg['show_clock'] else 'desligado'}")
+        print("[5] Caixa de ferramentas")
+        print("[6] Informações do sistema")
+        print("[7] Restaurar padrões")
+        print(f"[8] Tema do Nano: {'NEXUS CYBER ativo' if nano_theme_status() else 'desativado'}")
+        print(f"[9] NEXUS Themes: {cfg.get('theme', 'cyan').upper()}")
         print("[0] Sair")
 
         choice = live_input("\nNexus/config > ", cfg)
 
         if choice == "1":
             print("\nOpções: " + ", ".join(COLORS))
-
             value = input("Escolha uma cor: ").strip().lower()
-
             if value in COLORS:
                 cfg["theme"] = value
                 save_config(cfg)
@@ -679,6 +693,7 @@ def settings(cfg):
                 if value:
                     cfg["banner"] = value
                     cfg["banner_ascii"] = False
+                    cfg["banner_image"] = ""
                     save_config(cfg)
 
             elif mode == "2":
@@ -691,6 +706,7 @@ def settings(cfg):
                     if confirm in ("s", "sim"):
                         cfg["banner"] = value
                         cfg["banner_ascii"] = True
+                        cfg["banner_image"] = ""
                         save_config(cfg)
                         print("Banner ASCII salvo!")
                     else:
@@ -698,57 +714,85 @@ def settings(cfg):
                     pause()
 
         elif choice == "3":
+            print("\nBANNER POR IMAGEM • ANSI TRUE COLOR")
+            print("Formatos suportados: PNG, JPG, JPEG, WEBP, BMP e GIF (primeiro quadro).")
+            print("Dica: conceda acesso aos arquivos com termux-setup-storage.")
+            image_value = input("\nCaminho da imagem > ").strip().strip('"').strip("'")
+            if image_value:
+                image_path = Path(image_value).expanduser()
+                if not image_path.is_file():
+                    print("\nArquivo não encontrado.")
+                    pause()
+                else:
+                    try:
+                        from modules.image_banner import render_image
+                        preview = render_image(image_path)
+                        print("\nPRÉVIA (ajustada à largura atual):\n")
+                        for line in preview:
+                            print(line)
+                        confirm = input("\nUsar essa imagem como banner? [S/N] > ").strip().lower()
+                        if confirm in ("s", "sim"):
+                            cfg["banner_image"] = str(image_path.resolve())
+                            cfg["banner_ascii"] = False
+                            save_config(cfg)
+                            print("Banner por imagem salvo!")
+                        else:
+                            print("Alteração cancelada.")
+                    except (OSError, ValueError, RuntimeError) as error:
+                        print(f"\nNão foi possível converter a imagem: {error}")
+                    pause()
+
+        elif choice == "4":
             cfg["show_clock"] = not cfg["show_clock"]
             save_config(cfg)
 
-        elif choice == "4":
+        elif choice == "5":
             tools_menu(cfg)
 
-        elif choice == "5":
+        elif choice == "6":
             show_system(cfg)
 
-        elif choice == "6":
+        elif choice == "7":
             cfg = DEFAULTS.copy()
             save_config(cfg)
 
-        elif choice == "7":
+        elif choice == "8":
             while True:
                 os.system("clear")
                 banner(cfg)
-                print("NEXUS CYBER • NANO EDITOR\\n")
+                print("NEXUS CYBER • NANO EDITOR\n")
                 print("[1] Ativar tema NEXUS CYBER")
                 print("[2] Remover tema do Nano")
                 print("[3] Ver estado atual")
                 print("[0] Voltar")
-                nano_choice = live_input("\\nNexus/nano > ", cfg)
+                nano_choice = live_input("\nNexus/nano > ", cfg)
 
                 if nano_choice == "1":
                     try:
                         message = apply_nano_theme()
-                        print(f"\\n{message}")
+                        print(f"\n{message}")
                     except OSError as error:
-                        print(f"\\nNão foi possível configurar o Nano: {error}")
+                        print(f"\nNão foi possível configurar o Nano: {error}")
                     pause()
                 elif nano_choice == "2":
                     try:
-                        print(f"\\n{remove_nano_theme()}")
+                        print(f"\n{remove_nano_theme()}")
                     except OSError as error:
-                        print(f"\\nNão foi possível remover o tema: {error}")
+                        print(f"\nNão foi possível remover o tema: {error}")
                     pause()
                 elif nano_choice == "3":
-                    print("\\nTema NEXUS CYBER: " + ("ATIVO" if nano_theme_status() else "DESATIVADO"))
+                    print("\nTema NEXUS CYBER: " + ("ATIVO" if nano_theme_status() else "DESATIVADO"))
                     print("Arquivo do tema: ~/.config/nano/nexus.nanorc")
                     print("Integração: ~/.nanorc")
                     pause()
                 elif nano_choice == "0":
                     break
 
-        elif choice == "8":
+        elif choice == "9":
             themes_menu(cfg, save_config)
 
         elif choice == "0":
             return
-
 
 # ============================================================
 # ATUALIZADOR
