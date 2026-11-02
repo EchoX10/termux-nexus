@@ -21,6 +21,7 @@ bash install.sh
 ## Recursos
 
 - Interface de terminal em ciano com banner ASCII.
+- **NEXUS Image Banner:** converte imagens em blocos `█` com cores ANSI True Color, ajustando automaticamente a largura à janela atual do terminal.
 - **NEXUS CYBER Nano:** tema ciano/azul para o editor Nano, com numeração de linhas e cores de interface; preserva o conteúdo pré-existente de `~/.nanorc` e usa o realce de sintaxe nativo.
 - Configurações persistentes em JSON.
 - Integração com Bash e Zsh.
