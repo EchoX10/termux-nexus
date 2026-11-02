@@ -83,9 +83,8 @@ def ensure_termux_api() -> bool:
 
 
 def pick_image(destination: str | Path) -> Path | None:
-    """Abre o seletor Android e valida o arquivo de imagem realmente recebido."""
-    if not ensure_termux_api():
-        return None
+    """Abre o seletor Android, diagnostica a resposta e valida a imagem recebida."""
+    ensure_termux_api()
 
     picker = shutil.which("termux-storage-get")
     if not picker:
@@ -94,37 +93,52 @@ def pick_image(destination: str | Path) -> Path | None:
     base = Path(destination).expanduser()
     base.parent.mkdir(parents=True, exist_ok=True)
 
-    # O teste no dispositivo confirmou que o seletor grava em HOME.
-    # Receber primeiro em HOME evita falhas ao gravar diretamente em
-    # diretórios de configuração; depois movemos o arquivo validado.
-    temporary = Path.home() / f".nexus-image-{time.time_ns()}.img"
+    # Usar nome visível e extensão PNG: ambos os testes manuais do usuário
+    # confirmaram que termux-storage-get grava corretamente nesse formato.
+    temporary = Path.home() / f"NEXUS-IMAGE-{time.time_ns()}.png"
+    print(f"\n[DIAGNÓSTICO] Comando: {picker}")
+    print(f"[DIAGNÓSTICO] Arquivo temporário: {temporary}")
+    print("[DIAGNÓSTICO] Aguardando a seleção no Android...")
+
     try:
         result = subprocess.run([picker, str(temporary)], check=False)
     except OSError as error:
-        raise RuntimeError(f"Não foi possível abrir o seletor do Android: {error}") from error
+        raise RuntimeError(f"Falha ao executar o seletor: {error}") from error
 
-    if not temporary.is_file() or temporary.stat().st_size == 0:
+    exists = temporary.is_file()
+    size = temporary.stat().st_size if exists else 0
+    print(f"\n[DIAGNÓSTICO] Código de saída: {result.returncode}")
+    print(f"[DIAGNÓSTICO] Arquivo criado: {'sim' if exists else 'não'}")
+    print(f"[DIAGNÓSTICO] Tamanho recebido: {size} bytes")
+
+    if not exists or size == 0:
         temporary.unlink(missing_ok=True)
         if result.returncode != 0:
             raise RuntimeError(
-                f"O seletor terminou com código {result.returncode} e não entregou um arquivo."
+                f"Seletor retornou código {result.returncode}; nenhum arquivo foi recebido em {temporary}."
             )
-        return None
+        raise RuntimeError(
+            f"O seletor terminou sem erro, mas não criou o arquivo esperado: {temporary}"
+        )
 
-    # Não confiar apenas no código de saída: validar o conteúdo recebido.
     try:
         Image = _pillow_image()
         with Image.open(temporary) as selected:
+            print(f"[DIAGNÓSTICO] Formato detectado: {selected.format}")
+            print(f"[DIAGNÓSTICO] Dimensões: {selected.width}x{selected.height}")
             selected.verify()
+        print("[DIAGNÓSTICO] Validação Pillow: OK")
     except Exception as error:
         temporary.unlink(missing_ok=True)
-        raise RuntimeError(f"O Android não entregou uma imagem válida: {error}") from error
+        raise RuntimeError(f"Arquivo recebido, mas não é uma imagem válida: {error}") from error
 
-    target = base.with_name(f"{base.stem}-{time.time_ns()}{temporary.suffix}")
+    target = base.with_name(f"{base.stem}-{time.time_ns()}.png")
     try:
         shutil.move(str(temporary), str(target))
     except OSError as error:
-        temporary.unlink(missing_ok=True)
-        raise RuntimeError(f"A imagem foi recebida, mas não pôde ser salva em {base.parent}: {error}") from error
+        raise RuntimeError(
+            f"Imagem recebida e validada, mas não foi possível movê-la para {target}: {error}"
+        ) from error
 
+    print(f"[DIAGNÓSTICO] Arquivo final: {target}")
     return target
