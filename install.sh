@@ -18,6 +18,15 @@ if ! command -v python >/dev/null 2>&1; then
 fi
 
 # Verificar dependências
+if ! python -c "from PIL import Image" >/dev/null 2>&1; then
+    echo "Instalando Pillow para banners por imagem..."
+    if command -v pkg >/dev/null 2>&1; then
+        pkg install -y python-pillow
+    else
+        python -m pip install Pillow
+    fi
+fi
+
 echo "Verificando dependências do Termux Nexus..."
 
 if ! python -c "import prompt_toolkit" >/dev/null 2>&1; then
