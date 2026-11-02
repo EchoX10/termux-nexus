@@ -56,10 +56,10 @@ def render_image(path: str | Path, max_width: int | None = None) -> list[str]:
             red, green, blue = top
             bg_red, bg_green, bg_blue = bottom
             parts.append(
-                f"\\033[38;2;{red};{green};{blue};"
+                f"\033[38;2;{red};{green};{blue};"
                 f"48;2;{bg_red};{bg_green};{bg_blue}m▀"
             )
-        parts.append("\\033[0m")
+        parts.append("\033[0m")
         lines.append("".join(parts))
 
     return lines
