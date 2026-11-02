@@ -89,7 +89,7 @@ def ensure_termux_api() -> bool:
         print("Abrindo a página oficial para instalar o aplicativo complementar...")
         _open_url("https://f-droid.org/packages/com.termux.api/")
         print("Instale o Termux:API pela mesma fonte do seu Termux e depois volte ao NEXUS.")
-        return False
+        raise RuntimeError("O aplicativo complementar Termux:API ainda não está instalado.")
     return True
 
 
