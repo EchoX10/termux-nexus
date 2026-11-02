@@ -93,26 +93,38 @@ def pick_image(destination: str | Path) -> Path | None:
 
     base = Path(destination).expanduser()
     base.parent.mkdir(parents=True, exist_ok=True)
-    # Extensão reconhecida pelo Android, sem sobrescrever o banner anterior.
-    target = base.with_name(f"{base.stem}-{time.time_ns()}.png")
+
+    # O teste no dispositivo confirmou que o seletor grava em HOME.
+    # Receber primeiro em HOME evita falhas ao gravar diretamente em
+    # diretórios de configuração; depois movemos o arquivo validado.
+    temporary = Path.home() / f".nexus-image-{time.time_ns()}.img"
     try:
-        result = subprocess.run([picker, str(target)], check=False)
+        result = subprocess.run([picker, str(temporary)], check=False)
     except OSError as error:
         raise RuntimeError(f"Não foi possível abrir o seletor do Android: {error}") from error
 
-    if not target.is_file() or target.stat().st_size == 0:
-        target.unlink(missing_ok=True)
+    if not temporary.is_file() or temporary.stat().st_size == 0:
+        temporary.unlink(missing_ok=True)
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"O seletor terminou com código {result.returncode} e não entregou um arquivo."
+            )
         return None
 
     # Não confiar apenas no código de saída: validar o conteúdo recebido.
     try:
         Image = _pillow_image()
-        with Image.open(target) as selected:
+        with Image.open(temporary) as selected:
             selected.verify()
     except Exception as error:
-        target.unlink(missing_ok=True)
-        if result.returncode != 0:
-            return None
+        temporary.unlink(missing_ok=True)
         raise RuntimeError(f"O Android não entregou uma imagem válida: {error}") from error
+
+    target = base.with_name(f"{base.stem}-{time.time_ns()}{temporary.suffix}")
+    try:
+        shutil.move(str(temporary), str(target))
+    except OSError as error:
+        temporary.unlink(missing_ok=True)
+        raise RuntimeError(f"A imagem foi recebida, mas não pôde ser salva em {base.parent}: {error}") from error
 
     return target
