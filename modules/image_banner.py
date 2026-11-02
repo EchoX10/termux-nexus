@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -68,10 +69,10 @@ def pick_image(destination: str | Path) -> Path | None:
             "'pkg install termux-api' e o aplicativo Termux:API."
         )
 
-    target = Path(destination).expanduser()
-    target.parent.mkdir(parents=True, exist_ok=True)
+    base = Path(destination).expanduser()
+    base.parent.mkdir(parents=True, exist_ok=True)
+    target = base.with_name(f"{base.stem}-{time.time_ns()}{base.suffix}")
     try:
-        target.unlink(missing_ok=True)
         result = subprocess.run([picker, str(target)], check=False)
     except OSError as error:
         raise RuntimeError(f"Não foi possível abrir o seletor: {error}") from error
