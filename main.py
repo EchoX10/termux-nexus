@@ -718,14 +718,12 @@ def settings(cfg):
             print("Formatos suportados: PNG, JPG, JPEG, WEBP, BMP e GIF (primeiro quadro).")
             storage_command = shutil.which("termux-setup-storage")
             if storage_command:
-                print("\nVerificando acesso ao armazenamento do Android...")
+                print("\\nVerificando acesso ao armazenamento do Android...")
                 try:
                     subprocess.run([storage_command], check=False)
                     print("Se o Android mostrar uma solicitação de permissão, autorize o acesso.")
                 except OSError as error:
                     print(f"Não foi possível abrir a configuração de armazenamento: {error}")
-            else:
-                print("Comando termux-setup-storage não encontrado. Instale/atualize termux-tools.")
 
             try:
                 from modules.image_banner import pick_image, render_image
