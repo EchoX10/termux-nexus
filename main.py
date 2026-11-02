@@ -164,6 +164,59 @@ def banner(cfg):
     print()
 
 
+NEXUS_HUB_URL = "https://echox10.github.io/termux-nexus/"
+
+
+def open_nexus_page(page, cfg):
+    """Abre uma página do NEXUS HUB no navegador Android."""
+    pages = {
+        "inicio": "",
+        "ajuda": "ajuda.html",
+        "documentacao": "documentacao.html",
+        "novidades": "novidades.html",
+        "sobre": "sobre.html",
+    }
+    path = pages.get(page)
+    if path is None:
+        return
+    url = NEXUS_HUB_URL + path
+    opener = shutil.which("termux-open-url")
+    if not opener:
+        print("\\ntermux-open-url não encontrado. Instale o pacote termux-tools.")
+        pause()
+        return
+    try:
+        subprocess.run([opener, url], check=True)
+        print(f"\\nAbrindo: {url}")
+    except (OSError, subprocess.CalledProcessError) as error:
+        print(f"\\nNão foi possível abrir a página: {error}")
+        pause()
+
+
+def nexus_hub_menu(cfg):
+    pages = [
+        ("1", "Início", "inicio"),
+        ("2", "Central de ajuda", "ajuda"),
+        ("3", "Documentação", "documentacao"),
+        ("4", "Novidades e atualizações", "novidades"),
+        ("5", "Sobre o NEXUS", "sobre"),
+    ]
+    while True:
+        os.system("clear")
+        banner(cfg)
+        print("NEXUS HUB • CENTRAL ONLINE\\n")
+        for number, label, _ in pages:
+            print(f"[{number}] {label}")
+        print("[0] Voltar")
+        choice = live_input("\\nNexus/online > ", cfg)
+        if choice == "0":
+            return
+        selected = next((item for item in pages if item[0] == choice), None)
+        if selected:
+            log_event(f"Abriu NEXUS HUB: {selected[1]}")
+            open_nexus_page(selected[2], cfg)
+
+
 def pause():
     try:
         input("\nPressione Enter para voltar...")
@@ -888,6 +941,7 @@ def main():
         print("[6] NEXUS Logs")
         print("[7] NEXUS Editor")
         print("[8] NEXUS Discord Bot Studio")
+        print("[9] NEXUS HUB • Central online")
         print("[0] Sair")
 
         choice = live_input("\nNexus > ", cfg)
@@ -922,6 +976,9 @@ def main():
         elif choice == "8":
             log_event("Abriu NEXUS Discord Bot Studio")
             discord_studio_menu(cfg)
+
+        elif choice == "9":
+            nexus_hub_menu(cfg)
 
         elif choice == "0":
             break
