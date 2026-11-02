@@ -67,7 +67,7 @@ def _open_url(url: str) -> None:
 
 
 def ensure_termux_api() -> bool:
-    """Instala o pacote CLI e orienta a instalar o app Android complementar."""
+    """Garante o comando CLI sem consultar pm, que pode gerar falso negativo."""
     pkg = shutil.which("pkg")
     if not pkg:
         raise RuntimeError("Gerenciador pkg do Termux não foi encontrado.")
@@ -78,18 +78,7 @@ def ensure_termux_api() -> bool:
         if result.returncode != 0 or not shutil.which("termux-storage-get"):
             raise RuntimeError("Não foi possível instalar termux-api. Verifique a conexão e tente novamente.")
 
-    pm = shutil.which("pm")
-    app_installed = False
-    if pm:
-        check = subprocess.run([pm, "path", "com.termux.api"], capture_output=True, text=True, check=False)
-        app_installed = check.returncode == 0 and "package:" in check.stdout
-
-    if not app_installed:
-        print("\\nO aplicativo Termux:API não está instalado no Android.")
-        print("Abrindo a página oficial para instalar o aplicativo complementar...")
-        _open_url("https://f-droid.org/packages/com.termux.api/")
-        print("Instale o Termux:API pela mesma fonte do seu Termux e depois volte ao NEXUS.")
-        raise RuntimeError("O aplicativo complementar Termux:API ainda não está instalado.")
+    # O próprio seletor confirmará se o complemento Android consegue responder.
     return True
 
 
