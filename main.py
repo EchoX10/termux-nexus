@@ -30,6 +30,7 @@ from modules.logs import run as logs_menu, log_event
 from modules.editor import run as editor_menu
 from modules.themes import run as themes_menu
 from modules.discord_studio import run as discord_studio_menu
+from modules.choice_world import run as choice_world_menu
 
 HOME = Path.home()
 CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", HOME / ".config")) / "termux-nexus"
@@ -986,6 +987,7 @@ def main():
         print("[7] NEXUS Editor")
         print("[8] NEXUS Discord Bot Studio")
         print("[9] NEXUS HUB • Central online")
+        print("[10] NEXUS WORLD OF CHOICES • Aventura")
         print("[0] Sair")
 
         choice = live_input("\nNexus > ", cfg)
@@ -1023,6 +1025,10 @@ def main():
 
         elif choice == "9":
             nexus_hub_menu(cfg)
+
+        elif choice == "10":
+            log_event("Abriu NEXUS World of Choices")
+            choice_world_menu(cfg)
 
         elif choice == "0":
             break
